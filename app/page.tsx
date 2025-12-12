@@ -20,11 +20,11 @@ const DEPARTMENT_PINS: Record<string, string> = {
 };
 
 const DEPARTMENT_SHEETS: Record<string, string> = {
-  'floor': 'https://docs.google.com/spreadsheets/d/YOUR_FLOOR_SHEET_ID/edit',
-  'basement': 'https://docs.google.com/spreadsheets/d/YOUR_BASEMENT_SHEET_ID/edit',
-  'quality': 'https://docs.google.com/spreadsheets/d/YOUR_QUALITY_SHEET_ID/edit',
-  'stock': 'https://docs.google.com/spreadsheets/d/YOUR_STOCK_SHEET_ID/edit',
-  'attendance': 'https://docs.google.com/spreadsheets/d/YOUR_ATTENDANCE_SHEET_ID/edit',
+  'floor': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=1312897317#gid=1312897317',
+  'basement': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=0#gid=0',
+  'quality': 'https://docs.google.com/spreadsheets/d/1Vf86RYqPH82qrEq1z2QPA99AkVIndP8J/edit?gid=2024287451#gid=2024287451',
+  'stock': 'https://docs.google.com/spreadsheets/d/12siBNbDOtmyAqIRH5cgc9APtw3rIEqBeZTzBRgiBrsg/edit?gid=580761467&usp=gmail#gid=580761467',
+  'attendance': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=1751300469#gid=1751300469',
   'it_check': '#' 
 };
 
