@@ -1,14 +1,13 @@
 import { google } from 'googleapis';
 
 export const DEPARTMENTS = [
-  { id: 'floor', name: 'Production (First Floor)', startCol: 1 },
-  { id: 'basement', name: 'Production (Basement)', startCol: 5 },
-  { id: 'quality', name: 'Quality Check', startCol: 9 },
-  { id: 'stock', name: 'Stock Availability', startCol: 13 },
-  { id: 'attendance', name: 'Attendance', startCol: 17 },
+  { id: 'floor', name: 'Production (First Floor)', startCol: 1, sheetName: 'Data_Floor' },
+  { id: 'basement', name: 'Production (Basement)', startCol: 5, sheetName: 'Data_Basement' },
+  { id: 'quality', name: 'Quality Check', startCol: 9, sheetName: 'Data_Quality' },
+  { id: 'stock', name: 'Stock Availability', startCol: 13, sheetName: 'Data_Stock' },
+  { id: 'attendance', name: 'Attendance', startCol: 17, sheetName: 'Data_Attendance' },
+  { id: 'it_check', name: 'IT Final Verification', startCol: 21, sheetName: 'Data_IT' } // <--- 6th Step
 ];
-
-const LOGS_SHEET_TITLE = "Data_Logs";
 
 async function getAuthSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -25,7 +24,7 @@ export async function getTodayRow(dateStr: string) {
   const sheets = await getAuthSheets();
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
-    range: 'Sheet1!A:U',
+    range: 'Sheet1!A:Z', // Extended range for 6 departments
   });
   const rows = response.data.values || [];
   const rowIndex = rows.findIndex((row) => row[0] === dateStr);
@@ -35,18 +34,20 @@ export async function getTodayRow(dateStr: string) {
 
 export async function createTodayRow(dateStr: string) {
   const sheets = await getAuthSheets();
+  // Create row with enough empty slots for 6 departments (Date + 4*6 = 25 columns)
   await sheets.spreadsheets.values.append({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     range: 'Sheet1!A:A',
     valueInputOption: 'USER_ENTERED',
-    requestBody: { values: [[dateStr, ...Array(20).fill('')]] },
+    requestBody: { values: [[dateStr, ...Array(25).fill('')]] },
   });
 }
 
 export async function updateDepartmentData(rowIndex: number, colIndex: number, data: string[]) {
   const sheets = await getAuthSheets();
-  const startChar = String.fromCharCode(65 + colIndex);
-  const endChar = String.fromCharCode(65 + colIndex + 3);
+  const startChar = getColumnLetter(colIndex);
+  const endChar = getColumnLetter(colIndex + 3);
+  
   await sheets.spreadsheets.values.update({
     spreadsheetId: process.env.GOOGLE_SHEET_ID,
     range: `Sheet1!${startChar}${rowIndex}:${endChar}${rowIndex}`,
@@ -55,52 +56,60 @@ export async function updateDepartmentData(rowIndex: number, colIndex: number, d
   });
 }
 
-// --- LINK PROCESSING LOGIC ---
-export async function processSheetLink(deptName: string, supervisor: string, sheetLink: string) {
+// Helper to calculate column letters (A, B... Z, AA)
+function getColumnLetter(colIndex: number) {
+  let letter = '';
+  while (colIndex >= 0) {
+    letter = String.fromCharCode((colIndex % 26) + 65) + letter;
+    colIndex = Math.floor(colIndex / 26) - 1;
+  }
+  return letter;
+}
+
+// --- OVERWRITE LOGIC ---
+export async function processSheetLink(deptName: string, supervisor: string, sheetLink: string, targetSheetTitle: string) {
   const sheets = await getAuthSheets();
   const mainSpreadsheetId = process.env.GOOGLE_SHEET_ID;
 
-  // Extract ID from link
+  // 1. Extract External ID
   const matches = sheetLink.match(/\/d\/([a-zA-Z0-9-_]+)/);
   if (!matches || !matches[1]) throw new Error("Invalid Google Sheet Link");
   const externalSheetId = matches[1];
 
-  // Read external sheet
+  // 2. Read User Data
   const externalResponse = await sheets.spreadsheets.values.get({
     spreadsheetId: externalSheetId,
     range: 'A:Z', 
   });
-  
   const rawData = externalResponse.data.values;
   if (!rawData || rawData.length === 0) return;
 
-  // Add metadata to rows
-  const timestamp = new Date().toLocaleString();
+  // 3. Add Context (Timestamp in IST)
+  const timestamp = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
   const labeledRows = rawData.map(row => [timestamp, deptName, supervisor, ...row]);
 
-  // Check if Logs sheet exists
+  // 4. Check/Create/Clear Sheet
   const meta = await sheets.spreadsheets.get({ spreadsheetId: mainSpreadsheetId });
-  const sheetExists = meta.data.sheets?.some(s => s.properties?.title === LOGS_SHEET_TITLE);
+  const sheetExists = meta.data.sheets?.some(s => s.properties?.title === targetSheetTitle);
 
   if (!sheetExists) {
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: mainSpreadsheetId,
-      requestBody: { requests: [{ addSheet: { properties: { title: LOGS_SHEET_TITLE } } }] }
+      requestBody: { requests: [{ addSheet: { properties: { title: targetSheetTitle } } }] }
     });
-    // Add Header
-    await sheets.spreadsheets.values.append({
+  } else {
+    // CLEAR existing data to overwrite previous day
+    await sheets.spreadsheets.values.clear({
       spreadsheetId: mainSpreadsheetId,
-      range: `${LOGS_SHEET_TITLE}!A1`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [["Archived At", "Department", "Supervisor", "--- DATA START ---"]] }
+      range: `${targetSheetTitle}!A:Z`,
     });
   }
 
-  // Append data
-  await sheets.spreadsheets.values.append({
+  // 5. Write Fresh Data
+  await sheets.spreadsheets.values.update({
     spreadsheetId: mainSpreadsheetId,
-    range: `${LOGS_SHEET_TITLE}!A:A`,
+    range: `${targetSheetTitle}!A1`,
     valueInputOption: 'USER_ENTERED',
-    requestBody: { values: labeledRows },
+    requestBody: { values: [["Uploaded At (IST)", "Department", "Supervisor", "--- DATA START ---"], ...labeledRows] },
   });
 }

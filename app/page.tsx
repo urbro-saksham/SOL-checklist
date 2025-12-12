@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Loader2, CheckCircle2, Lock, ArrowRight, Activity, ShieldCheck, Link as LinkIcon } from 'lucide-react';
+import { Loader2, CheckCircle2, Lock, ArrowRight, Activity, ShieldCheck, Link as LinkIcon, ServerCog } from 'lucide-react';
 
-// --- 🔐 SECURITY SETTINGS ---
-// Change these codes to whatever you want!
+// --- ⚙️ CONFIGURATION ---
+const OWNER_PHONE = "919876543210"; // <--- REPLACE WITH OWNER'S NUMBER (No +)
+
 const DEPARTMENT_PINS: Record<string, string> = {
-  'floor': '1001',      // Pin for Production Floor
-  'basement': '2002',   // Pin for Basement
-  'quality': '3003',    // Pin for Quality
-  'stock': '4004',      // Pin for Stock
-  'attendance': '5005'  // Pin for Attendance
+  'floor': '1001',
+  'basement': '2002',
+  'quality': '3003',
+  'stock': '4004',
+  'attendance': '5005',
+  'it_check': '6006' // <--- IT PIN
 };
 
 export default function Home() {
@@ -47,21 +49,28 @@ export default function Home() {
     const json = await res.json();
     
     if (!res.ok) {
-        alert(json.error || "Failed to submit. Check your link permissions.");
+        alert(json.error || "Failed. Check your link permissions.");
     } else {
         await fetchData();
+
+        // --- 🚀 IT AUTOMATION (GATEKEEPER) ---
+        // Only triggers when the IT Department (Step 6) submits
+        if (deptId === 'it_check') {
+            const text = `✅ *Daily Protocol Completed (IST)*\n\nDate: ${new Date().toLocaleDateString('en-IN')}\n\nAll 5 Departments have submitted data.\nIT Verification Complete.\n\n- Sent via SOL App`;
+            // Redirects IT User's phone to WhatsApp to send message to Owner
+            window.location.href = `https://wa.me/${OWNER_PHONE}?text=${encodeURIComponent(text)}`;
+        }
     }
     setSubmitting(null);
   };
 
-  // Calculations
   const completedCount = data.filter(d => d.completed).length;
-  const progress = (completedCount / 5) * 100;
-  const isAllDone = completedCount === 5;
+  // Progress is now out of 6
+  const progress = (completedCount / 6) * 100;
+  const isAllDone = completedCount === 6;
   
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  const dayStr = today.toLocaleDateString('en-GB', { weekday: 'long' });
+  // Date in Indian Format
+  const dateStr = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' });
 
   if (loading) return (
     <div className="flex h-screen w-full items-center justify-center bg-[#0f172a] text-white">
@@ -74,12 +83,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#f1f5f9] text-slate-800 font-sans pb-24">
-      {/* Background Gradient */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-[#0f172a] via-[#1e3a8a] to-transparent opacity-100" />
       </div>
 
-      {/* Header */}
       <header className="relative z-10 pt-6 px-6 pb-20">
         <div className="max-w-xl mx-auto flex items-center justify-between">
           <div className="relative h-16 w-40 filter drop-shadow-lg">
@@ -87,11 +94,10 @@ export default function Home() {
           </div>
           <div className="text-right text-white">
             <div className="text-3xl font-black tracking-tighter leading-none">{dateStr}</div>
-            <div className="text-xs font-bold text-blue-300 uppercase tracking-widest">{dayStr}</div>
+            <div className="text-xs font-bold text-blue-300 uppercase tracking-widest">IST</div>
           </div>
         </div>
 
-        {/* Progress Dashboard */}
         <div className="max-w-xl mx-auto mt-8">
            <div className="flex justify-between items-end mb-2 text-white">
              <div>
@@ -116,11 +122,11 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Cards List */}
       <main className="relative z-20 px-4 -mt-12 max-w-xl mx-auto space-y-5">
         {data.map((dept, index) => {
           const isLocked = index > 0 && !data[index - 1].completed;
           const isActive = !dept.completed && !isLocked;
+          const isIT = dept.id === 'it_check';
 
           return (
             <div 
@@ -142,7 +148,7 @@ export default function Home() {
                     h-12 w-12 rounded-xl flex items-center justify-center text-lg shadow-inner
                     ${dept.completed ? 'bg-green-100 text-green-700' : isActive ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-400'}
                   `}>
-                    {dept.completed ? <CheckCircle2 size={24} /> : isActive ? <Activity size={24} className="animate-pulse"/> : <Lock size={22} />}
+                    {dept.completed ? <CheckCircle2 size={24} /> : isIT ? <ServerCog size={24}/> : isActive ? <Activity size={24} className="animate-pulse"/> : <Lock size={22} />}
                   </div>
 
                   <div className="flex-1">
@@ -163,7 +169,6 @@ export default function Home() {
                       <div>
                         <div className="text-slate-900 font-semibold">{dept.supervisor}</div>
                         <div className="text-xs text-slate-400 font-mono mt-0.5">{dept.timestamp}</div>
-                        {dept.comment && <div className="text-xs text-slate-500 italic mt-1 border-t border-slate-200 pt-1">"{dept.comment}"</div>}
                       </div>
                     </div>
                   ) : isActive ? (
@@ -184,8 +189,8 @@ export default function Home() {
             <div className="inline-flex items-center justify-center p-4 bg-green-100 rounded-full text-green-700 mb-3 shadow-lg shadow-green-200">
               <ShieldCheck size={32} />
             </div>
-            <h2 className="text-xl font-black text-slate-800">All Systems Clear</h2>
-            <p className="text-slate-500 text-sm">Great job team.</p>
+            <h2 className="text-xl font-black text-slate-800">Complete</h2>
+            <p className="text-slate-500 text-sm">Owner has been notified.</p>
           </div>
         )}
       </main>
@@ -193,7 +198,7 @@ export default function Home() {
   );
 }
 
-// --- FORM COMPONENT (Fixed Inputs) ---
+// --- FIXED FORM INPUTS (Pointer Events None) ---
 function ActiveForm({ dept, requiredPin, onSubmit, isSubmitting }: any) {
   const [name, setName] = useState('');
   const [comment, setComment] = useState('');
@@ -217,7 +222,7 @@ function ActiveForm({ dept, requiredPin, onSubmit, isSubmitting }: any) {
   return (
     <div className="space-y-5 pt-2">
       <div className="grid gap-5 md:grid-cols-2">
-          {/* --- NAME FIELD --- */}
+          {/* NAME FIELD */}
           <div className="relative">
             <input 
               id={`name-${dept.id}`}
@@ -226,17 +231,12 @@ function ActiveForm({ dept, requiredPin, onSubmit, isSubmitting }: any) {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-            <label 
-              htmlFor={`name-${dept.id}`}
-              className="pointer-events-none absolute left-0 -top-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all 
-              peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 
-              peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-red-500"
-            >
+            <label htmlFor={`name-${dept.id}`} className="pointer-events-none absolute left-0 -top-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-red-500">
               Supervisor Name
             </label>
           </div>
           
-          {/* --- COMMENT FIELD --- */}
+          {/* COMMENT FIELD */}
           <div className="relative">
             <input 
               id={`comment-${dept.id}`}
@@ -245,23 +245,16 @@ function ActiveForm({ dept, requiredPin, onSubmit, isSubmitting }: any) {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             />
-            <label 
-              htmlFor={`comment-${dept.id}`}
-              className="pointer-events-none absolute left-0 -top-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all 
-              peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 
-              peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-blue-500"
-            >
+            <label htmlFor={`comment-${dept.id}`} className="pointer-events-none absolute left-0 -top-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-blue-500">
               Comments (Optional)
             </label>
           </div>
       </div>
 
-      {/* --- SHEET LINK FIELD --- */}
+      {/* SHEET LINK FIELD */}
       <div className="relative mt-2">
         <div className="flex items-center gap-3">
-             <div className="bg-green-50 p-3 rounded-xl text-green-700 shrink-0">
-                 <LinkIcon size={20} />
-             </div>
+             <div className="bg-green-50 p-3 rounded-xl text-green-700 shrink-0"><LinkIcon size={20} /></div>
              <div className="relative w-full">
                 <input 
                   id={`link-${dept.id}`}
@@ -270,65 +263,37 @@ function ActiveForm({ dept, requiredPin, onSubmit, isSubmitting }: any) {
                   value={link}
                   onChange={(e) => setLink(e.target.value)}
                 />
-                <label 
-                  htmlFor={`link-${dept.id}`}
-                  className="pointer-events-none absolute left-0 -top-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all 
-                  peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 
-                  peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-green-600"
-                >
+                <label htmlFor={`link-${dept.id}`} className="pointer-events-none absolute left-0 -top-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-green-600">
                   Paste Google Sheet Link
                 </label>
              </div>
         </div>
-        <p className="text-[10px] text-slate-400 mt-2 pl-14 opacity-80">
-            *Ensure sheet is shared with "Anyone with link" or the bot.
-        </p>
+        <p className="text-[10px] text-slate-400 mt-2 pl-14 opacity-80">*Ensure sheet is shared with "Anyone with link" or the bot.</p>
       </div>
 
-      {/* --- PIN & SUBMIT --- */}
+      {/* PIN & SUBMIT */}
       <div className="flex gap-4 pt-2">
         <div className="relative w-28 shrink-0">
             <input 
               id={`pin-${dept.id}`}
               type="password"
               maxLength={4}
-              className={`peer w-full h-12 bg-transparent border-b-2 text-center text-lg font-bold text-slate-900 tracking-[0.2em] placeholder-transparent focus:outline-none transition-all pt-2
-                  ${error && error.includes('PIN') ? 'border-red-500 text-red-600' : 'border-slate-300 focus:border-red-500'}
-              `}
+              className={`peer w-full h-12 bg-transparent border-b-2 text-center text-lg font-bold text-slate-900 tracking-[0.2em] placeholder-transparent focus:outline-none transition-all pt-2 ${error ? 'border-red-500 text-red-600' : 'border-slate-300 focus:border-red-500'}`}
               placeholder="PIN"
               value={pin}
               onChange={(e) => { setPin(e.target.value); setError(''); }}
             />
-            <label 
-              htmlFor={`pin-${dept.id}`}
-              className="pointer-events-none absolute left-0 right-0 text-center -top-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all 
-              peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 
-              peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-red-500"
-            >
-              PIN
-            </label>
+            <label htmlFor={`pin-${dept.id}`} className="pointer-events-none absolute left-0 right-0 text-center -top-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-slate-500 peer-focus:-top-1 peer-focus:text-[10px] peer-focus:text-red-500">PIN</label>
         </div>
 
         <button 
             disabled={!name.trim() || !pin || !link || isSubmitting}
             onClick={handleVerifyAndSubmit}
-            className={`
-            flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] shadow-lg
-            ${!name.trim() || !pin || !link
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' 
-                : 'bg-[#1e3a8a] text-white shadow-blue-900/20 hover:bg-blue-900 hover:shadow-blue-900/40'
-            }
-            `}
+            className={`flex-1 h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all transform active:scale-[0.98] shadow-lg ${!name.trim() || !pin || !link ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' : 'bg-[#1e3a8a] text-white shadow-blue-900/20 hover:bg-blue-900'}`}
         >
-            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : (
-            <>
-                <span>VERIFY & SUBMIT</span>
-                <ArrowRight size={16} />
-            </>
-            )}
+            {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <><span>VERIFY & SUBMIT</span><ArrowRight size={16} /></>}
         </button>
       </div>
-      
       {error && <div className="text-center text-xs text-red-500 font-bold animate-pulse mt-2">{error}</div>}
     </div>
   );

@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server';
 import { getTodayRow, createTodayRow, updateDepartmentData, processSheetLink, DEPARTMENTS } from '@/lib/sheets';
 import { format } from 'date-fns';
 
-export const dynamic = 'force-dynamic'; // Prevents caching issues
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const today = format(new Date(), 'yyyy-MM-dd');
+  // Get today's date in IST
+  const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).split(',')[0]; // Format: YYYY-MM-DD
   
   try {
     let row = await getTodayRow(today);
@@ -26,7 +28,14 @@ export async function GET() {
       comment: rowData[dept.startCol + 3] || '',
     }));
 
-    return NextResponse.json({ date: today, rowIndex: row?.rowIndex ?? 0, departments: structuredData });
+    const isAllDone = structuredData.every(d => d.completed);
+
+    return NextResponse.json({ 
+        date: today, 
+        rowIndex: row?.rowIndex ?? 0, 
+        departments: structuredData,
+        isAllDone
+    });
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
@@ -41,21 +50,20 @@ export async function POST(req: Request) {
     const dept = DEPARTMENTS.find(d => d.id === deptId);
     if (!dept) return NextResponse.json({ error: 'Invalid Dept' }, { status: 400 });
 
-    const timestamp = format(new Date(), 'HH:mm:ss');
+    // --- TIMESTAMP IN IST ---
+    const timestamp = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: true });
     
-    // 1. Process the Google Sheet Link (Extract and Archive Data)
     if (sheetLink) {
         try {
-            await processSheetLink(dept.name, supervisor, sheetLink);
+            await processSheetLink(dept.name, supervisor, sheetLink, dept.sheetName);
         } catch (e) {
             console.error("Link Error:", e);
-            return NextResponse.json({ error: 'Link Error: Please ensure "Anyone with link" is viewable or share with bot email.' }, { status: 400 });
+            return NextResponse.json({ error: 'Link Error. Ensure "Anyone with link" is ON.' }, { status: 400 });
         }
     } else {
-        return NextResponse.json({ error: 'Google Sheet Link is required' }, { status: 400 });
+        return NextResponse.json({ error: 'Link required' }, { status: 400 });
     }
 
-    // 2. Mark as Complete
     await updateDepartmentData(rowIndex, dept.startCol, ['TRUE', supervisor, timestamp, comment]);
     
     return NextResponse.json({ success: true });
