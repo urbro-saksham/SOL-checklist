@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getTodayRow, createTodayRow, updateDepartmentData, processSheetLink, DEPARTMENTS } from '@/lib/sheets';
+import { getTodayRow, createTodayRow, updateDepartmentData, DEPARTMENTS } from '@/lib/sheets';
 import { format } from 'date-fns';
-
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  // Get today's date in IST
-  const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).split(',')[0]; // Format: YYYY-MM-DD
+  // IST Date for Today
+  const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).split(',')[0]; 
   
   try {
     let row = await getTodayRow(today);
@@ -45,25 +44,15 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { rowIndex, deptId, supervisor, comment, sheetLink } = body;
+    const { rowIndex, deptId, supervisor, comment } = body; // No sheetLink needed anymore
     
     const dept = DEPARTMENTS.find(d => d.id === deptId);
     if (!dept) return NextResponse.json({ error: 'Invalid Dept' }, { status: 400 });
 
-    // --- TIMESTAMP IN IST ---
+    // IST Timestamp
     const timestamp = new Date().toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: true });
-    
-    if (sheetLink) {
-        try {
-            await processSheetLink(dept.name, supervisor, sheetLink, dept.sheetName);
-        } catch (e) {
-            console.error("Link Error:", e);
-            return NextResponse.json({ error: 'Link Error. Ensure "Anyone with link" is ON.' }, { status: 400 });
-        }
-    } else {
-        return NextResponse.json({ error: 'Link required' }, { status: 400 });
-    }
 
+    // Mark as Complete
     await updateDepartmentData(rowIndex, dept.startCol, ['TRUE', supervisor, timestamp, comment]);
     
     return NextResponse.json({ success: true });
