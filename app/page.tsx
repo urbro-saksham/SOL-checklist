@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { 
   Loader2, CheckCircle2, Lock, ArrowRight, Activity, ShieldCheck, 
   ExternalLink, ServerCog, KeyRound, X, LayoutGrid, AlertTriangle, 
-  Link as LinkIcon, Maximize2, Save, Cloud, Check 
+  Link as LinkIcon, Maximize2, Save, Cloud, BarChart3 
 } from 'lucide-react';
 
 // --- ⚙️ CONFIGURATION ---
 const OWNER_PHONE = "919876543210"; 
+const MASTER_PIN = "9999"; // <--- PIN TO ACCESS DASHBOARD
 
 const DEPARTMENT_PINS: Record<string, string> = {
   'floor': '1001',
@@ -21,21 +23,28 @@ const DEPARTMENT_PINS: Record<string, string> = {
 };
 
 const DEFAULT_LINKS: Record<string, string> = {
-  'floor': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=1312897317#gid=1312897317',
-  'basement': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=0#gid=0',
-  'quality': 'https://docs.google.com/spreadsheets/d/1Vf86RYqPH82qrEq1z2QPA99AkVIndP8J/edit?gid=2024287451#gid=2024287451',
-  'stock': 'https://docs.google.com/spreadsheets/d/12siBNbDOtmyAqIRH5cgc9APtw3rIEqBeZTzBRgiBrsg/edit?gid=580761467&usp=gmail#gid=580761467',
-  'attendance': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=1751300469#gid=1751300469',
+  'floor': 'https://docs.google.com/spreadsheets/d/YOUR_FLOOR_SHEET_ID/edit',
+  'basement': 'https://docs.google.com/spreadsheets/d/YOUR_BASEMENT_SHEET_ID/edit',
+  'quality': 'https://docs.google.com/spreadsheets/d/YOUR_QUALITY_SHEET_ID/edit',
+  'stock': 'https://docs.google.com/spreadsheets/d/YOUR_STOCK_SHEET_ID/edit',
+  'attendance': 'https://docs.google.com/spreadsheets/d/YOUR_ATTENDANCE_SHEET_ID/edit',
   'it_check': '#' 
 };
 
 export default function Home() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
   const [activeDeptId, setActiveDeptId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
+  
+  // Embedded Sheet State
   const [embeddedLink, setEmbeddedLink] = useState<string | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false); // Controls the "Saving..." animation
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Owner Login State
+  const [showOwnerLogin, setShowOwnerLogin] = useState(false);
+  const [ownerPin, setOwnerPin] = useState('');
 
   const fetchData = async () => {
     try {
@@ -67,7 +76,7 @@ export default function Home() {
     } else {
         await fetchData();
         setActiveDeptId(null); 
-        setEmbeddedLink(null);
+        setEmbeddedLink(null); // Close iframe
 
         if (deptId === 'it_check') {
             generateWhatsAppReport(name);
@@ -76,10 +85,18 @@ export default function Home() {
     setSubmitting(null);
   };
 
+  const handleOwnerLogin = () => {
+    if (ownerPin === MASTER_PIN) {
+        router.push('/dashboard');
+    } else {
+        alert("Access Denied: Incorrect PIN");
+        setOwnerPin('');
+    }
+  };
+
   const handleSaveAndClose = () => {
-    // 1. Show Sync Animation
     setIsSyncing(true);
-    // 2. Wait 1.5s to simulate "Syncing to Backend"
+    // Simulate sync delay
     setTimeout(() => {
         setIsSyncing(false);
         setEmbeddedLink(null);
@@ -115,8 +132,8 @@ export default function Home() {
   const tasksCompleted = data.filter(d => d.id !== 'it_check' && d.completed).length;
   const progress = (completedCount / 6) * 100;
   const dateStr = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' });
+  
   const activeDept = data.find(d => d.id === activeDeptId);
-
   const currentLink = activeDept?.savedLink || DEFAULT_LINKS[activeDept?.id || ''] || '';
 
   if (loading) return (
@@ -131,7 +148,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-100 font-sans overflow-hidden relative selection:bg-blue-500 selection:text-white">
       
-      {/* Background */}
+      {/* Background Ambience */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[#0f172a]" />
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] animate-[pulse_10s_infinite]" />
@@ -139,11 +156,49 @@ export default function Home() {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
       </div>
 
-      {/* --- 🖥️ EMBEDDED WORKSPACE (THEME MATCHED) --- */}
+      {/* --- 🔐 OWNER LOGIN MODAL --- */}
+      {showOwnerLogin && (
+        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-300">
+           <div className="bg-[#1e293b] border border-slate-700 p-8 rounded-2xl w-full max-w-sm text-center relative shadow-2xl">
+              <button 
+                onClick={() => setShowOwnerLogin(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
+              >
+                <X size={20}/>
+              </button>
+              
+              <div className="mx-auto w-16 h-16 bg-blue-600/20 rounded-full flex items-center justify-center mb-4 text-blue-400 border border-blue-500/30">
+                 <BarChart3 size={32} />
+              </div>
+              
+              <h2 className="text-xl font-bold text-white mb-1">Owner Access</h2>
+              <p className="text-slate-400 text-xs mb-6">Enter Master PIN to view Dashboard</p>
+              
+              <input 
+                type="password" 
+                className="w-full bg-slate-900 border border-slate-600 rounded-xl h-12 text-center text-white font-bold tracking-[0.5em] mb-4 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all" 
+                maxLength={4} 
+                value={ownerPin} 
+                onChange={e => setOwnerPin(e.target.value)}
+                placeholder="••••"
+                onKeyDown={(e) => e.key === 'Enter' && handleOwnerLogin()}
+              />
+              
+              <button 
+                onClick={handleOwnerLogin} 
+                className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+              >
+                ACCESS DASHBOARD
+              </button>
+           </div>
+        </div>
+      )}
+
+      {/* --- 🖥️ EMBEDDED WORKSPACE (IFRAME) --- */}
       {embeddedLink && (
          <div className="fixed inset-0 z-[60] flex flex-col animate-in slide-in-from-bottom-10 duration-500 bg-[#0f172a]">
             
-            {/* Dark Toolbar */}
+            {/* Toolbar */}
             <div className="h-16 bg-[#0f172a]/95 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-6 shadow-2xl z-50">
                 <div className="flex items-center gap-4">
                     <div className="bg-blue-600/20 text-blue-400 p-2 rounded-lg border border-blue-500/30"><LayoutGrid size={20}/></div>
@@ -151,13 +206,13 @@ export default function Home() {
                         <h3 className="text-base font-bold text-white leading-tight">{activeDept?.name}</h3>
                         <p className="text-[10px] text-slate-400 uppercase tracking-wider flex items-center gap-1">
                             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
-                            Live Connection Active
+                            Live Workspace
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-4">
-                   <p className="hidden md:block text-xs text-slate-500 italic">Changes in Google Sheets save automatically</p>
+                   <p className="hidden md:block text-xs text-slate-500 italic">Changes save automatically to Google Sheets</p>
                    <button 
                        onClick={handleSaveAndClose}
                        disabled={isSyncing}
@@ -166,7 +221,7 @@ export default function Home() {
                        {isSyncing ? (
                          <>
                             <Loader2 size={16} className="animate-spin" />
-                            <span>SYNCING DATA...</span>
+                            <span>SYNCING...</span>
                          </>
                        ) : (
                          <>
@@ -174,20 +229,16 @@ export default function Home() {
                             <span>SAVE & CLOSE</span>
                          </>
                        )}
-                       {/* Button Shine Effect */}
-                       <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
                    </button>
                 </div>
             </div>
             
-            {/* The Google Sheet Iframe Container */}
+            {/* Iframe Container */}
             <div className="flex-1 relative bg-[#0f172a]">
-                {/* Loading Spinner for Iframe */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
                     <Loader2 size={40} className="text-blue-500 animate-spin opacity-50"/>
                 </div>
                 
-                {/* The Iframe */}
                 <iframe 
                     src={embeddedLink} 
                     className={`relative z-10 w-full h-full border-0 transition-opacity duration-700 ${isSyncing ? 'opacity-50 scale-[0.99] blur-sm' : 'opacity-100'}`}
@@ -212,16 +263,23 @@ export default function Home() {
          </div>
       )}
 
+      {/* --- HEADER --- */}
       <header className="relative z-10 w-full px-8 py-6 flex items-center justify-between border-b border-white/5 bg-white/5 backdrop-blur-md">
         <div className="flex items-center gap-6">
            <div className="relative h-12 w-40 hover:brightness-125 transition-all">
              <Image src="/logo.webp" alt="Logo" fill className="object-contain object-left" priority />
            </div>
-           <div className="hidden md:flex flex-col">
-             <span className="text-xs font-bold text-blue-400 tracking-widest uppercase">Protocol Status</span>
-             <span className="text-sm font-bold text-white tracking-wide">Daily Production Checklist</span>
-           </div>
+           
+           {/* DASHBOARD BUTTON (Triggers Login) */}
+           <button 
+             onClick={() => setShowOwnerLogin(true)}
+             className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-xs font-bold border border-white/10 transition-all hover:scale-105"
+           >
+             <BarChart3 size={14} />
+             DASHBOARD
+           </button>
         </div>
+
         <div className="flex items-center gap-6">
           <div className="text-right hidden sm:block">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-widest">IST Date</div>
@@ -237,7 +295,10 @@ export default function Home() {
         </div>
       </header>
 
+      {/* --- MAIN CONTENT --- */}
       <main className="relative z-10 container mx-auto px-6 py-6 h-[calc(100vh-100px)] flex flex-col">
+        
+        {/* Warning Banner */}
         <div className="mb-6 bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center justify-center gap-3 text-amber-200">
             <AlertTriangle size={18} className="animate-pulse" />
             <span className="text-sm font-bold tracking-wide">
@@ -245,6 +306,7 @@ export default function Home() {
             </span>
         </div>
 
+        {/* Tiles Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-full max-h-[600px]">
           {data.map((dept) => {
             const isIT = dept.id === 'it_check';
@@ -272,18 +334,31 @@ export default function Home() {
                 )}
 
                 <div className="flex justify-between items-start w-full">
-                  <div className={`p-3 rounded-xl transition-all duration-300 ${isCompleted ? 'bg-blue-500/20 text-blue-400' : isLocked ? 'bg-slate-800 text-slate-500' : 'bg-white/10 text-white group-hover:bg-blue-600 group-hover:text-white'}`}>
+                  <div className={`
+                    p-3 rounded-xl transition-all duration-300
+                    ${isCompleted ? 'bg-blue-500/20 text-blue-400' : isLocked ? 'bg-slate-800 text-slate-500' : 'bg-white/10 text-white group-hover:bg-blue-600 group-hover:text-white'}
+                  `}>
                     {isCompleted ? <CheckCircle2 size={24} /> : isIT ? <ServerCog size={24}/> : isLocked ? <Lock size={24} /> : <Activity size={24} />}
                   </div>
-                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${isCompleted ? (isLate ? 'bg-red-900/40 border-red-500 text-red-200' : 'bg-blue-900/40 border-blue-500/30 text-blue-300') : isLocked ? 'bg-slate-900 border-slate-700 text-slate-500' : 'bg-red-500/20 border-red-500/30 text-red-300 animate-pulse'}`}>
+                  
+                  <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border
+                    ${isCompleted 
+                        ? isLate ? 'bg-red-900/40 border-red-500 text-red-200' : 'bg-blue-900/40 border-blue-500/30 text-blue-300' 
+                        : isLocked ? 'bg-slate-900 border-slate-700 text-slate-500' 
+                        : 'bg-red-500/20 border-red-500/30 text-red-300 animate-pulse'}
+                  `}>
                     {isCompleted ? (isLate ? 'LATE SUBMISSION' : 'COMPLETED') : isLocked ? 'LOCKED' : 'ACTION REQ.'}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg md:text-xl font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">{dept.name}</h3>
+                  <h3 className="text-lg md:text-xl font-bold text-white mb-1 group-hover:text-blue-200 transition-colors">
+                    {dept.name}
+                  </h3>
                   {isCompleted ? (
-                    <div className="text-xs text-slate-400 font-mono">By: <span className="text-white">{dept.supervisor}</span> at {dept.timestamp.replace('🔴 LATE', '')}</div>
+                    <div className="text-xs text-slate-400 font-mono">
+                      By: <span className="text-white">{dept.supervisor}</span> at {dept.timestamp.replace('🔴 LATE', '')}
+                    </div>
                   ) : (
                     <div className="text-xs text-slate-400 group-hover:text-slate-300 flex items-center gap-2">
                        {isLocked ? 'Waiting for sequence...' : 'Click to Update Status'}
@@ -297,21 +372,36 @@ export default function Home() {
         </div>
       </main>
 
-      {/* VERIFICATION MODAL */}
+      {/* --- COMPLETION MODAL --- */}
       {activeDept && !embeddedLink && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setActiveDeptId(null)}/>
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => setActiveDeptId(null)}
+          />
+
           <div className="relative w-full max-w-lg bg-[#0f172a] border border-slate-700 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="bg-slate-900/50 p-6 border-b border-slate-800 flex justify-between items-center">
-              <div><h2 className="text-xl font-bold text-white">{activeDept.name}</h2></div>
-              <button onClick={() => setActiveDeptId(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors"><X size={20} className="text-slate-400" /></button>
+              <div>
+                <h2 className="text-xl font-bold text-white">{activeDept.name}</h2>
+              </div>
+              <button onClick={() => setActiveDeptId(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                <X size={20} className="text-slate-400" />
+              </button>
             </div>
+
             <div className="p-6">
               {activeDept.completed ? (
                 <div className="text-center py-8">
-                  <div className="inline-flex p-4 bg-green-500/20 rounded-full text-green-400 mb-4"><CheckCircle2 size={48} /></div>
+                  <div className="inline-flex p-4 bg-green-500/20 rounded-full text-green-400 mb-4">
+                    <CheckCircle2 size={48} />
+                  </div>
                   <h3 className="text-white font-bold text-lg">Already Submitted</h3>
-                  <p className="text-slate-400 text-sm mt-2">By: {activeDept.supervisor}<br/>Time: {activeDept.timestamp}</p>
+                  <p className="text-slate-400 text-sm mt-2">
+                    Supervisor: <span className="text-white">{activeDept.supervisor}</span>
+                    <br/>
+                    Time: {activeDept.timestamp}
+                  </p>
                 </div>
               ) : (
                 <ActiveForm 
@@ -331,6 +421,7 @@ export default function Home() {
   );
 }
 
+// --- SUB-COMPONENT: FORM WITH DYNAMIC LINKS ---
 function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSubmitting }: any) {
   const [name, setName] = useState('');
   const [comment, setComment] = useState('');
@@ -346,19 +437,39 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
 
   const handleFinalSubmit = () => {
     if (!name.trim()) { setError("Name Required"); return; }
-    if (dept.id !== 'it_check' && !link.includes('docs.google.com/spreadsheets')) { setError("Valid Google Sheet Link Required"); return; }
+    if (dept.id !== 'it_check' && !link.includes('docs.google.com/spreadsheets')) { 
+        setError("Valid Google Sheet Link Required"); return; 
+    }
     onSubmit(dept.id, name, comment, link);
   };
 
   if (!isVerified) {
     return (
       <div className="space-y-6 text-center">
-        <div className="mx-auto w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center text-slate-400"><KeyRound size={24} /></div>
-        <div><h3 className="text-white font-bold">Identity Verification</h3><p className="text-slate-400 text-xs mt-1">Enter Department PIN</p></div>
-        <div className="flex justify-center gap-2">
-          <input type="password" maxLength={4} className="w-48 h-12 bg-slate-900 border border-slate-700 rounded-xl text-center text-xl font-bold text-white tracking-[0.5em] focus:border-blue-500 focus:outline-none" placeholder="PIN" value={pin} onChange={(e) => { setPin(e.target.value); setError(''); }} onKeyDown={(e) => e.key === 'Enter' && handleVerify()}/>
+        <div className="mx-auto w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center text-slate-400">
+           <KeyRound size={24} />
         </div>
-        <button onClick={handleVerify} className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all">VERIFY ACCESS</button>
+        <div>
+           <h3 className="text-white font-bold">Identity Verification</h3>
+           <p className="text-slate-400 text-xs mt-1">Enter Department PIN</p>
+        </div>
+        <div className="flex justify-center gap-2">
+          <input 
+            type="password" 
+            maxLength={4} 
+            className="w-48 h-12 bg-slate-900 border border-slate-700 rounded-xl text-center text-xl font-bold text-white tracking-[0.5em] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all" 
+            placeholder="PIN" 
+            value={pin} 
+            onChange={(e) => { setPin(e.target.value); setError(''); }} 
+            onKeyDown={(e) => e.key === 'Enter' && handleVerify()}
+          />
+        </div>
+        <button 
+           onClick={handleVerify} 
+           className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+        >
+           VERIFY ACCESS
+        </button>
         {error && <div className="text-red-400 text-xs font-bold animate-pulse">{error}</div>}
       </div>
     );
@@ -367,7 +478,7 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
   return (
     <div className="space-y-5 animate-in slide-in-from-bottom-5 duration-300">
       
-      {/* 1. BUTTON: TRIGGERS EMBEDDED IFRAME */}
+      {/* 1. BUTTON: TRIGGERS EMBEDDED IFRAME (Last Saved Link) */}
       {dept.id !== 'it_check' && (
         <button 
             onClick={() => onOpenSheet(savedLink || '#')}
@@ -375,7 +486,10 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
         >
           <div className="flex items-center gap-3">
              <div className="p-2 bg-green-500/20 text-green-400 rounded-lg group-hover:scale-110 transition-transform"><Maximize2 size={20}/></div>
-             <div className="text-left"><div className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">Launch Work Sheet</div><div className="text-[10px] text-slate-400">Opens inside App</div></div>
+             <div className="text-left">
+                <div className="text-sm font-bold text-white group-hover:text-blue-300 transition-colors">Launch Work Sheet</div>
+                <div className="text-[10px] text-slate-400">Opens inside App</div>
+             </div>
           </div>
           <ExternalLink size={16} className="text-slate-500 group-hover:text-white transition-colors"/>
         </button>
@@ -383,10 +497,17 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
 
       <div className="h-px bg-slate-800 w-full my-4"></div>
 
+      {/* 2. FORM: USES NEW LINK INPUT */}
       <div className="space-y-4">
         <div className="grid gap-5 md:grid-cols-2">
-            <div className="relative"><input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent" id="n" placeholder="N" value={name} onChange={e => setName(e.target.value)}/><label htmlFor="n" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-3.5 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Supervisor Name</label></div>
-            <div className="relative"><input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent" id="c" placeholder="C" value={comment} onChange={e => setComment(e.target.value)}/><label htmlFor="c" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-3.5 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Comments</label></div>
+            <div className="relative">
+                <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent" id="n" placeholder="N" value={name} onChange={e => setName(e.target.value)}/>
+                <label htmlFor="n" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-3.5 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Supervisor Name</label>
+            </div>
+            <div className="relative">
+                <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent" id="c" placeholder="C" value={comment} onChange={e => setComment(e.target.value)}/>
+                <label htmlFor="c" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-3.5 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Comments</label>
+            </div>
         </div>
 
         {dept.id !== 'it_check' && (
@@ -402,9 +523,14 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
         )}
       </div>
 
-      <button disabled={isSubmitting} onClick={handleFinalSubmit} className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 mt-4 shadow-[0_0_20px_rgba(22,163,74,0.3)]">
+      <button 
+          disabled={isSubmitting} 
+          onClick={handleFinalSubmit} 
+          className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 mt-4 shadow-[0_0_20px_rgba(22,163,74,0.3)]"
+      >
           {isSubmitting ? <Loader2 className="animate-spin" size={20}/> : <><span>CONFIRM COMPLETION</span><CheckCircle2 size={18} /></>}
       </button>
+      
       {error && <div className="text-center text-xs text-red-400 font-bold">{error}</div>}
     </div>
   );

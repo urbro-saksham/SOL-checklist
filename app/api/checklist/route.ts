@@ -8,6 +8,7 @@ export async function GET() {
   const today = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kolkata" }).split(',')[0]; 
   
   try {
+    // 1. Get Checklist Status
     let row = await getTodayRow(today);
     if (!row) {
       await createTodayRow(today);
@@ -15,7 +16,7 @@ export async function GET() {
       row = await getTodayRow(today);
     }
     
-    // FETCH SAVED LINKS
+    // 2. Get Dynamic Links
     const savedLinks = await getStoredLinks();
 
     const rowData = row?.data || [];
@@ -26,15 +27,17 @@ export async function GET() {
       supervisor: rowData[dept.startCol + 1] || '',
       timestamp: rowData[dept.startCol + 2] || '',
       comment: rowData[dept.startCol + 3] || '',
-      // Send the saved link to frontend. If none, it will be empty string
-      savedLink: savedLinks[dept.id] || ''
+      // Attach the saved link to the department object
+      currentLink: savedLinks[dept.id] || '' 
     }));
+
+    const isAllDone = structuredData.every(d => d.completed);
 
     return NextResponse.json({ 
         date: today, 
         rowIndex: row?.rowIndex ?? 0, 
         departments: structuredData,
-        isAllDone: structuredData.every(d => d.completed)
+        isAllDone
     });
   } catch (error) {
     console.error("API Error:", error);
@@ -53,13 +56,12 @@ export async function POST(req: Request) {
     if (deptId !== 'it_check') {
         if (!sheetLink) return NextResponse.json({ error: "Link missing" }, { status: 400 });
         const isValid = await checkSheetForToday(sheetLink);
-        if (!isValid) return NextResponse.json({ error: `⚠️ Data Missing! Today's date not found in the provided sheet.` }, { status: 400 });
+        if (!isValid) return NextResponse.json({ error: `⚠️ Data Missing! Today's date not found in the sheet.` }, { status: 400 });
         
-        // UPDATE LINK IN DB for next time
+        // --- 💾 SAVE LINK FOR NEXT TIME ---
         await updateStoredLink(deptId, sheetLink);
     }
 
-    // TIME CHECK (7:30 PM IST)
     const now = new Date();
     const istTimeStr = now.toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: false });
     const [hours, minutes] = istTimeStr.split(':').map(Number);
@@ -70,6 +72,7 @@ export async function POST(req: Request) {
     }
 
     await updateDepartmentData(rowIndex, dept.startCol, ['TRUE', supervisor, displayTime, comment]);
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Save Error:", error);
