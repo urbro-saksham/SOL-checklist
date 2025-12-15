@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { 
   Loader2, CheckCircle2, Lock, ArrowRight, Activity, ShieldCheck, 
-  ExternalLink, ServerCog, KeyRound, X, LayoutGrid, AlertTriangle, Link as LinkIcon, Maximize2, Minimize2 
+  ExternalLink, ServerCog, KeyRound, X, LayoutGrid, AlertTriangle, 
+  Link as LinkIcon, Maximize2, Save, Cloud, Check 
 } from 'lucide-react';
 
 // --- ⚙️ CONFIGURATION ---
@@ -19,7 +20,6 @@ const DEPARTMENT_PINS: Record<string, string> = {
   'it_check': '6006'
 };
 
-// DEFAULT LINKS (Used if no dynamic link exists)
 const DEFAULT_LINKS: Record<string, string> = {
   'floor': 'https://docs.google.com/spreadsheets/d/YOUR_FLOOR_SHEET_ID/edit',
   'basement': 'https://docs.google.com/spreadsheets/d/YOUR_BASEMENT_SHEET_ID/edit',
@@ -34,7 +34,8 @@ export default function Home() {
   const [data, setData] = useState<any[]>([]);
   const [activeDeptId, setActiveDeptId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
-  const [embeddedLink, setEmbeddedLink] = useState<string | null>(null); // Controls the Iframe
+  const [embeddedLink, setEmbeddedLink] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false); // Controls the "Saving..." animation
 
   const fetchData = async () => {
     try {
@@ -66,13 +67,23 @@ export default function Home() {
     } else {
         await fetchData();
         setActiveDeptId(null); 
-        setEmbeddedLink(null); // Close iframe if open
+        setEmbeddedLink(null);
 
         if (deptId === 'it_check') {
             generateWhatsAppReport(name);
         }
     }
     setSubmitting(null);
+  };
+
+  const handleSaveAndClose = () => {
+    // 1. Show Sync Animation
+    setIsSyncing(true);
+    // 2. Wait 1.5s to simulate "Syncing to Backend"
+    setTimeout(() => {
+        setIsSyncing(false);
+        setEmbeddedLink(null);
+    }, 1500);
   };
 
   const generateWhatsAppReport = (itName: string) => {
@@ -106,7 +117,6 @@ export default function Home() {
   const dateStr = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' });
   const activeDept = data.find(d => d.id === activeDeptId);
 
-  // Determine current link (API or Default)
   const currentLink = activeDept?.savedLink || DEFAULT_LINKS[activeDept?.id || ''] || '';
 
   if (loading) return (
@@ -129,41 +139,75 @@ export default function Home() {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
       </div>
 
-      {/* --- 🖥️ EMBEDDED WORKSPACE (THE IFRAME MODAL) --- */}
+      {/* --- 🖥️ EMBEDDED WORKSPACE (THEME MATCHED) --- */}
       {embeddedLink && (
-         <div className="fixed inset-0 z-[60] bg-[#0f172a] flex flex-col animate-in slide-in-from-bottom-10 duration-500">
-            {/* Toolbar */}
-            <div className="h-14 bg-slate-900 border-b border-slate-700 flex items-center justify-between px-4">
-                <div className="flex items-center gap-3">
-                    <div className="bg-green-600 text-white p-1.5 rounded-lg"><LayoutGrid size={18}/></div>
+         <div className="fixed inset-0 z-[60] flex flex-col animate-in slide-in-from-bottom-10 duration-500 bg-[#0f172a]">
+            
+            {/* Dark Toolbar */}
+            <div className="h-16 bg-[#0f172a]/95 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-6 shadow-2xl z-50">
+                <div className="flex items-center gap-4">
+                    <div className="bg-blue-600/20 text-blue-400 p-2 rounded-lg border border-blue-500/30"><LayoutGrid size={20}/></div>
                     <div>
-                        <h3 className="text-sm font-bold text-white leading-none">{activeDept?.name}</h3>
-                        <p className="text-[10px] text-slate-400">Live Workspace Mode</p>
+                        <h3 className="text-base font-bold text-white leading-tight">{activeDept?.name}</h3>
+                        <p className="text-[10px] text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                            Live Connection Active
+                        </p>
                     </div>
                 </div>
-                <button 
-                    onClick={() => setEmbeddedLink(null)}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition-all"
-                >
-                    <Minimize2 size={14} />
-                    <span>DONE & CLOSE</span>
-                </button>
+
+                <div className="flex items-center gap-4">
+                   <p className="hidden md:block text-xs text-slate-500 italic">Changes in Google Sheets save automatically</p>
+                   <button 
+                       onClick={handleSaveAndClose}
+                       disabled={isSyncing}
+                       className="group relative flex items-center gap-3 bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_0_20px_rgba(22,163,74,0.3)] hover:shadow-[0_0_30px_rgba(22,163,74,0.5)] overflow-hidden"
+                   >
+                       {isSyncing ? (
+                         <>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span>SYNCING DATA...</span>
+                         </>
+                       ) : (
+                         <>
+                            <Save size={16} />
+                            <span>SAVE & CLOSE</span>
+                         </>
+                       )}
+                       {/* Button Shine Effect */}
+                       <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500"></div>
+                   </button>
+                </div>
             </div>
             
-            {/* The Google Sheet Iframe */}
-            <div className="flex-1 relative bg-white">
+            {/* The Google Sheet Iframe Container */}
+            <div className="flex-1 relative bg-[#0f172a]">
+                {/* Loading Spinner for Iframe */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                    <Loader2 size={40} className="text-blue-500 animate-spin opacity-50"/>
+                </div>
+                
+                {/* The Iframe */}
                 <iframe 
                     src={embeddedLink} 
-                    className="absolute inset-0 w-full h-full border-0"
+                    className={`relative z-10 w-full h-full border-0 transition-opacity duration-700 ${isSyncing ? 'opacity-50 scale-[0.99] blur-sm' : 'opacity-100'}`}
                     allow="clipboard-write"
                 />
-            </div>
-            {/* Fallback Link */}
-            <div className="h-8 bg-slate-900 flex items-center justify-center border-t border-slate-700">
-                <p className="text-[10px] text-slate-500 flex items-center gap-2">
-                    <AlertTriangle size={10} />
-                    Not loading? <a href={embeddedLink} target="_blank" className="underline text-blue-400 hover:text-blue-300">Click to open in new tab</a>
-                </p>
+
+                {/* Sync Overlay */}
+                {isSyncing && (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+                      <div className="bg-[#0f172a] border border-blue-500/50 p-6 rounded-2xl shadow-2xl flex flex-col items-center gap-4 animate-in zoom-in-95">
+                          <div className="w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center text-blue-400">
+                             <Cloud size={32} className="animate-pulse"/>
+                          </div>
+                          <div className="text-center">
+                             <h4 className="text-white font-bold text-lg">Syncing Workspace</h4>
+                             <p className="text-slate-400 text-xs mt-1">Returning to Command Center...</p>
+                          </div>
+                      </div>
+                  </div>
+                )}
             </div>
          </div>
       )}
@@ -274,7 +318,7 @@ export default function Home() {
                     dept={activeDept} 
                     requiredPin={DEPARTMENT_PINS[activeDept.id]} 
                     savedLink={currentLink} 
-                    onOpenSheet={(link: string) => setEmbeddedLink(link)} // Triggers Iframe
+                    onOpenSheet={(link: string) => setEmbeddedLink(link)} 
                     onSubmit={handleSubmit} 
                     isSubmitting={submitting === activeDept.id}
                 />
