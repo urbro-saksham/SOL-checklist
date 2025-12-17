@@ -17,7 +17,7 @@ const OWNER_PHONE = "917457001218";
 const MASTER_PIN = "9999"; 
 
 const DEPARTMENT_PINS: Record<string, string> = {
-  'floor': '1001',
+  'floor': '7830',
   'basement': '2002',
   'quality': '3003',
   'stock': '4004',
