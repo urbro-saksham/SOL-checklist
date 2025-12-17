@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Trophy, Timer, ArrowLeft, Crown, AlertTriangle } from 'lucide-react';
+import { Trophy, Timer, ArrowLeft, Crown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function Leaderboard() {
@@ -28,13 +28,18 @@ export default function Leaderboard() {
 
       <div className="max-w-4xl mx-auto relative z-10">
         
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-            <Link href="/" className="bg-white/10 p-2 rounded-full hover:bg-white/20 transition"><ArrowLeft /></Link>
-            <h1 className="text-3xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600">
-                Hall of Fame
-            </h1>
-            <Trophy className="text-yellow-400" size={32} />
+        {/* --- HEADER (Updated to match Dashboard) --- */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+            <div>
+                <h1 className="text-3xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-amber-600 flex items-center gap-3">
+                    Hall of Fame <Trophy className="text-yellow-400" size={32} />
+                </h1>
+                <p className="text-slate-400 mt-1 text-sm font-medium">Top Performing Supervisors</p>
+            </div>
+
+            <Link href="/" className="self-start md:self-auto flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg border border-white/10">
+                <ArrowLeft size={16} /> EXIT
+            </Link>
         </div>
 
         {loading ? (
