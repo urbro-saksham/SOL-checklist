@@ -8,7 +8,8 @@ import {
   CheckCircle2, Lock, ArrowRight, Activity, ShieldCheck, 
   ExternalLink, ServerCog, KeyRound, X, LayoutGrid, AlertTriangle, 
   Link as LinkIcon, Maximize2, Save, Cloud, BarChart3,
-  Factory, Warehouse, ClipboardCheck, Package, Users, Wifi, Trophy, Loader2
+  Factory, Warehouse, ClipboardCheck, Package, Users, Wifi, Trophy, Loader2,
+  ChevronDown, ChevronUp, Gauge, Hash, Ban, Box, UserCheck, UserX, Layers
 } from 'lucide-react';
 import TechLoader from '@/components/TechLoader';
 
@@ -98,23 +99,17 @@ export default function Home() {
   const [ownerPin, setOwnerPin] = useState('');
   const [ownerError, setOwnerError] = useState('');
 
-  // --- 🔒 LOCKDOWN MODE: DISABLE BACK BUTTON & SWIPES ---
+  // --- 🔒 LOCKDOWN MODE ---
   useEffect(() => {
     if (embeddedLink) {
-      // 1. Disable Mac Swipe Gestures (Overscroll)
       document.body.style.overscrollBehaviorX = 'none';
-
-      // 2. Trap the Back Button (History API)
       window.history.pushState(null, '', window.location.href);
       const handlePopState = () => {
-        // If they try to go back, force them to stay
         window.history.pushState(null, '', window.location.href);
       };
-
       window.addEventListener('popstate', handlePopState);
-
       return () => {
-        document.body.style.overscrollBehaviorX = 'auto'; // Re-enable normal scrolling
+        document.body.style.overscrollBehaviorX = 'auto';
         window.removeEventListener('popstate', handlePopState);
       };
     }
@@ -122,7 +117,6 @@ export default function Home() {
 
   const fetchData = async () => {
     try {
-      // Artificial delay to show off the cool 3D loader
       await new Promise(r => setTimeout(r, 1500));
       const res = await fetch('/api/checklist');
       if (!res.ok) throw new Error("Failed");
@@ -171,13 +165,11 @@ export default function Home() {
   const activeDept = data.find(d => d.id === activeDeptId);
   const currentLink = activeDept?.savedLink || DEFAULT_LINKS[activeDept?.id || ''] || '';
 
-  // 🔥 3D CONE LOADER
   if (loading) return <TechLoader />;
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-100 font-sans overflow-hidden relative selection:bg-blue-500 selection:text-white flex flex-col">
       
-      {/* Dynamic Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute inset-0 bg-[#0f172a]" />
         <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px] animate-[pulse_8s_infinite]" />
@@ -185,7 +177,6 @@ export default function Home() {
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 mix-blend-overlay"></div>
       </div>
 
-      {/* --- OWNER LOGIN MODAL --- */}
       {showOwnerLogin && (
         <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
            <div className="bg-[#1e293b] border border-slate-700 p-8 rounded-3xl w-full max-w-sm text-center relative shadow-2xl">
@@ -205,10 +196,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* --- EMBEDDED WORKSPACE (SHEET VIEW) --- */}
       {embeddedLink && (
          <div className="fixed inset-0 z-[60] flex flex-col animate-in slide-in-from-bottom-10 duration-500 bg-[#0f172a]">
-            {/* Top Bar with Logo */}
             <div className="h-16 bg-[#0f172a]/95 backdrop-blur-xl border-b border-white/10 flex items-center justify-between px-6 shadow-2xl z-50">
                 <div className="flex items-center gap-4">
                     <div className="relative h-8 w-8 md:h-10 md:w-10">
@@ -220,7 +209,6 @@ export default function Home() {
                         <p className="text-[10px] text-slate-400 uppercase tracking-wider flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>Live Workspace</p>
                     </div>
                 </div>
-                {/* SAVE & CLOSE IS THE ONLY WAY OUT */}
                 <button onClick={handleSaveAndClose} disabled={isSyncing} className="flex items-center gap-3 bg-green-600 hover:bg-green-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-all shadow-lg shadow-green-600/20">
                    {isSyncing ? <><Loader2 size={16} className="animate-spin" /><span>SYNCING...</span></> : <><Save size={16} /><span>SAVE & CLOSE</span></>}
                 </button>
@@ -245,7 +233,6 @@ export default function Home() {
          </div>
       )}
 
-      {/* --- MAIN HEADER --- */}
       <header className="relative z-10 w-full px-6 md:px-10 py-6 flex items-center justify-between">
         <div className="flex items-center gap-6">
            <div className="relative h-10 w-32 md:h-12 md:w-40 hover:opacity-80 transition-opacity cursor-pointer">
@@ -278,10 +265,8 @@ export default function Home() {
         </div>
       </header>
 
-      {/* --- MAIN GRID --- */}
       <main className="relative z-10 container mx-auto px-6 py-6 flex-1 flex flex-col justify-center">
         
-        {/* Warning Banner */}
         <div className="mb-8 bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-center justify-center gap-3 text-amber-200 backdrop-blur-sm max-w-4xl mx-auto w-full">
             <div className="p-2 bg-amber-500/10 rounded-full"><AlertTriangle size={16} className="animate-pulse" /></div>
             <span className="text-xs md:text-sm font-medium tracking-wide">
@@ -364,12 +349,10 @@ export default function Home() {
         </div>
       </main>
 
-      {/* --- FOOTER --- */}
       <footer className="relative z-10 py-6 text-center text-[10px] text-slate-600 font-medium uppercase tracking-widest mt-auto">
          © 2025 Sol France. All rights reserved.
       </footer>
 
-      {/* --- TASK MODAL --- */}
       {activeDept && !embeddedLink && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setActiveDeptId(null)}/>
@@ -423,6 +406,18 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
   const [name, setName] = useState('');
   const [comment, setComment] = useState('');
   const [link, setLink] = useState('');
+  
+  // DYNAMIC FIELDS
+  const [prodCount, setProdCount] = useState('');
+  const [boxesUsed, setBoxesUsed] = useState('');
+  const [totalPresent, setTotalPresent] = useState('');
+  const [totalAbsent, setTotalAbsent] = useState('');
+  const [piecesReceived, setPiecesReceived] = useState('');
+  const [okPieces, setOkPieces] = useState('');
+  const [rejCount, setRejCount] = useState('');
+  const [itemsAdded, setItemsAdded] = useState('');
+  
+  const [showLinkInput, setShowLinkInput] = useState(false);
   const [pin, setPin] = useState('');
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState('');
@@ -434,10 +429,33 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
 
   const handleFinalSubmit = () => {
     if (!name.trim()) { setError("Name Required"); return; }
-    if (dept.id !== 'it_check' && !link.includes('docs.google.com/spreadsheets')) { 
+    if (showLinkInput && dept.id !== 'it_check' && !link.includes('docs.google.com/spreadsheets')) { 
         setError("Valid Google Sheet Link Required"); return; 
     }
-    onSubmit(dept.id, name, comment, link);
+
+    // --- SMART PACKING LOGIC ---
+    let finalComment = comment;
+    const metrics = [];
+
+    if (dept.id === 'floor' || dept.id === 'basement') {
+        if (prodCount) metrics.push(`Prod: ${prodCount}`);
+        if (boxesUsed) metrics.push(`Boxes: ${boxesUsed}`);
+    } else if (dept.id === 'attendance') {
+        if (totalPresent) metrics.push(`Present: ${totalPresent}`);
+        if (totalAbsent) metrics.push(`Absent: ${totalAbsent}`);
+    } else if (dept.id === 'quality') {
+        if (piecesReceived) metrics.push(`Rec: ${piecesReceived}`);
+        if (okPieces) metrics.push(`OK: ${okPieces}`);
+        if (rejCount) metrics.push(`Rej: ${rejCount}`);
+    } else if (dept.id === 'stock') {
+        if (itemsAdded) metrics.push(`Items Added: ${itemsAdded}`);
+    }
+
+    if (metrics.length > 0) {
+        finalComment = `[${metrics.join(' | ')}] ${comment}`;
+    }
+
+    onSubmit(dept.id, name, finalComment, showLinkInput ? link : null);
   };
 
   if (!isVerified) {
@@ -478,26 +496,94 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
       <div className="h-px bg-slate-800 w-full"></div>
 
       <div className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-2">
-            <div className="relative group">
-                <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" id="n" placeholder="N" value={name} onChange={e => setName(e.target.value)}/>
-                <label htmlFor="n" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Supervisor Name</label>
-            </div>
-            <div className="relative group">
-                <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" id="c" placeholder="C" value={comment} onChange={e => setComment(e.target.value)}/>
-                <label htmlFor="c" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Comments (Optional)</label>
-            </div>
+        <div className="relative group">
+            <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" id="n" placeholder="N" value={name} onChange={e => setName(e.target.value)}/>
+            <label htmlFor="n" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Supervisor Name</label>
         </div>
 
-        {dept.id !== 'it_check' && (
-            <div className="relative group">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-slate-800 rounded-xl text-slate-400 shrink-0 border border-slate-700"><LinkIcon size={20} /></div>
-                    <div className="relative w-full">
-                        <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-green-500 focus:outline-none peer placeholder-transparent transition-all" id="l" placeholder="L" value={link} onChange={e => setLink(e.target.value)}/>
-                        <label htmlFor="l" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-green-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] pointer-events-none">Paste New Link (After Editing)</label>
+        {/* --- DYNAMIC FIELDS PER DEPARTMENT --- */}
+        
+        {/* 1. FLOOR & BASEMENT */}
+        {(dept.id === 'floor' || dept.id === 'basement') && (
+            <div className="grid grid-cols-2 gap-4">
+                <div className="relative group">
+                    <div className="absolute left-3 top-3 text-slate-500"><Hash size={16}/></div>
+                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" value={prodCount} onChange={e => setProdCount(e.target.value)}/>
+                    <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Total Production</label>
+                </div>
+                <div className="relative group">
+                    <div className="absolute left-3 top-3 text-slate-500"><Box size={16}/></div>
+                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" value={boxesUsed} onChange={e => setBoxesUsed(e.target.value)}/>
+                    <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Total Boxes Used</label>
+                </div>
+            </div>
+        )}
+
+        {/* 2. ATTENDANCE */}
+        {dept.id === 'attendance' && (
+            <div className="grid grid-cols-2 gap-4">
+                <div className="relative group">
+                    <div className="absolute left-3 top-3 text-emerald-500"><UserCheck size={16}/></div>
+                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-emerald-500 focus:outline-none peer placeholder-transparent transition-all" value={totalPresent} onChange={e => setTotalPresent(e.target.value)}/>
+                    <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-emerald-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-emerald-500 pointer-events-none">Total Present</label>
+                </div>
+                <div className="relative group">
+                    <div className="absolute left-3 top-3 text-red-500"><UserX size={16}/></div>
+                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-red-500 focus:outline-none peer placeholder-transparent transition-all" value={totalAbsent} onChange={e => setTotalAbsent(e.target.value)}/>
+                    <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-red-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-red-500 pointer-events-none">Total Absent</label>
+                </div>
+            </div>
+        )}
+
+        {/* 3. QUALITY */}
+        {dept.id === 'quality' && (
+            <div className="space-y-4">
+                 <div className="relative group">
+                    <div className="absolute left-3 top-3 text-slate-500"><Layers size={16}/></div>
+                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" value={piecesReceived} onChange={e => setPiecesReceived(e.target.value)}/>
+                    <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Total Pieces Received</label>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="relative group">
+                        <div className="absolute left-3 top-3 text-emerald-500"><CheckCircle2 size={16}/></div>
+                        <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-emerald-500 focus:outline-none peer placeholder-transparent transition-all" value={okPieces} onChange={e => setOkPieces(e.target.value)}/>
+                        <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-emerald-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-emerald-500 pointer-events-none">Total OK Pieces</label>
+                    </div>
+                    <div className="relative group">
+                        <div className="absolute left-3 top-3 text-red-500"><Ban size={16}/></div>
+                        <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-red-500 focus:outline-none peer placeholder-transparent transition-all" value={rejCount} onChange={e => setRejCount(e.target.value)}/>
+                        <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-red-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-red-500 pointer-events-none">Total Rejected</label>
                     </div>
                 </div>
+            </div>
+        )}
+
+        {/* 4. STOCK */}
+        {dept.id === 'stock' && (
+            <div className="relative group">
+                <div className="absolute left-3 top-3 text-cyan-500"><Package size={16}/></div>
+                <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-cyan-500 focus:outline-none peer placeholder-transparent transition-all" value={itemsAdded} onChange={e => setItemsAdded(e.target.value)}/>
+                <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-cyan-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-cyan-500 pointer-events-none">Total Items Added to Sheet</label>
+            </div>
+        )}
+
+        <div className="relative group">
+            <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" id="c" placeholder="C" value={comment} onChange={e => setComment(e.target.value)}/>
+            <label htmlFor="c" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Comments (Optional)</label>
+        </div>
+
+        {/* --- OPTIONAL LINK UPDATER --- */}
+        {dept.id !== 'it_check' && (
+            <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
+                <button onClick={() => setShowLinkInput(!showLinkInput)} className="w-full flex items-center justify-between p-4 text-xs font-bold text-slate-400 hover:text-white transition-colors">
+                    <span className="flex items-center gap-2"><LinkIcon size={14}/> UPDATE SHEET LINK?</span>
+                    {showLinkInput ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
+                </button>
+                {showLinkInput && (
+                    <div className="p-4 pt-0 animate-in slide-in-from-top-2">
+                        <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-green-500 focus:outline-none placeholder:text-slate-700" placeholder="Paste new Google Sheet URL here..." value={link} onChange={e => setLink(e.target.value)}/>
+                    </div>
+                )}
             </div>
         )}
       </div>
