@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   CheckCircle2, Lock, ArrowRight, Activity, ShieldCheck, 
-  ExternalLink, ServerCog, KeyRound, X, LayoutGrid, AlertTriangle, 
-  Link as LinkIcon, Maximize2, Save, Cloud, BarChart3,
+  ExternalLink, KeyRound, X, LayoutGrid, AlertTriangle, 
+  Link as LinkIcon, Maximize2, Save, BarChart3,
   Factory, Warehouse, ClipboardCheck, Package, Users, Wifi, Trophy, Loader2,
-  ChevronDown, ChevronUp, Gauge, Hash, Ban, Box, UserCheck, UserX, Layers
+  ChevronDown, ChevronUp, Hash, Ban, Box, UserCheck, UserX, Layers
 } from 'lucide-react';
 import TechLoader from '@/components/TechLoader';
 
@@ -26,7 +26,6 @@ const DEPARTMENT_PINS: Record<string, string> = {
   'it_check': '0769'
 };
 
-
 const DEFAULT_LINKS: Record<string, string> = {
       'floor': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=190658331#gid=190658331',
       'basement': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=1251109391#gid=1251109391',
@@ -35,6 +34,7 @@ const DEFAULT_LINKS: Record<string, string> = {
       'attendance': 'https://docs.google.com/spreadsheets/d/1O20bocLcEgeiUB9r8QdamIPweIbS1KOxpwk4ultJ8RU/edit?gid=0#gid=0',
       'it_check': '#' 
     };
+
 // --- 🎨 THEME CONFIGURATION ---
 const DEPT_THEME: Record<string, any> = {
   'floor': { 
@@ -421,6 +421,9 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
   const [pin, setPin] = useState('');
   const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState('');
+  
+  // ERROR STATE FOR FIELDS
+  const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
 
   const handleVerify = () => {
     if (pin !== requiredPin) { setError('Incorrect PIN'); return; }
@@ -428,24 +431,42 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
   };
 
   const handleFinalSubmit = () => {
-    // 1. Validate Name
-    if (!name.trim()) { setError("Name Required"); return; }
-    
-    // 2. Validate Link (ONLY IF PROVIDED)
-    // If link is empty, it's valid. If link is NOT empty, check it.
-    if (link.trim() && !link.includes('docs.google.com/spreadsheets')) { 
-        setError("Invalid Google Sheet Link"); return; 
+    // RESET ERRORS
+    setError('');
+    setFieldErrors({});
+    let hasError = false;
+    const newFieldErrors: Record<string, boolean> = {};
+
+    // 1. MANDATORY NAME CHECK
+    if (!name.trim()) { 
+        hasError = true; 
+        newFieldErrors['name'] = true;
     }
 
-    // 3. Validate MANDATORY Dynamic Fields
+    // 2. MANDATORY DYNAMIC FIELDS CHECK
     if (dept.id === 'floor' || dept.id === 'basement') {
-        if (!prodCount || !boxesUsed) { setError("Production & Boxes fields are mandatory"); return; }
+        if (!prodCount) { hasError = true; newFieldErrors['prodCount'] = true; }
+        if (!boxesUsed) { hasError = true; newFieldErrors['boxesUsed'] = true; }
     } else if (dept.id === 'attendance') {
-        if (!totalPresent || !totalAbsent) { setError("Attendance fields are mandatory"); return; }
+        if (!totalPresent) { hasError = true; newFieldErrors['totalPresent'] = true; }
+        if (!totalAbsent) { hasError = true; newFieldErrors['totalAbsent'] = true; }
     } else if (dept.id === 'quality') {
-        if (!piecesReceived || !okPieces || !rejCount) { setError("All Quality fields are mandatory"); return; }
+        if (!piecesReceived) { hasError = true; newFieldErrors['piecesReceived'] = true; }
+        if (!okPieces) { hasError = true; newFieldErrors['okPieces'] = true; }
+        if (!rejCount) { hasError = true; newFieldErrors['rejCount'] = true; }
     } else if (dept.id === 'stock') {
-        if (!itemsAdded) { setError("Items Added field is mandatory"); return; }
+        if (!itemsAdded) { hasError = true; newFieldErrors['itemsAdded'] = true; }
+    }
+
+    if (hasError) {
+        setFieldErrors(newFieldErrors);
+        setError("Please fill all mandatory red fields.");
+        return;
+    }
+    
+    // 3. OPTIONAL LINK CHECK (Only check if user typed something)
+    if (link.trim() !== '' && !link.includes('docs.google.com/spreadsheets')) { 
+        setError("Invalid Google Sheet Link (Leave empty if not updating)"); return; 
     }
 
     // --- SMART PACKING LOGIC ---
@@ -470,8 +491,11 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
         finalComment = `[${metrics.join(' | ')}] ${comment}`;
     }
 
-    // Pass link only if it exists, otherwise null
     onSubmit(dept.id, name, finalComment, link.trim() ? link : null);
+  };
+
+  const getBorderColor = (fieldName: string) => {
+      return fieldErrors[fieldName] ? 'border-red-500 animate-[shake_0.5s]' : 'border-slate-700 focus:border-blue-500';
   };
 
   if (!isVerified) {
@@ -513,7 +537,7 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
 
       <div className="space-y-4">
         <div className="relative group">
-            <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" id="n" placeholder="N" value={name} onChange={e => setName(e.target.value)}/>
+            <input className={`w-full bg-slate-900 border rounded-xl px-4 py-3.5 text-sm text-white focus:outline-none peer placeholder-transparent transition-all ${getBorderColor('name')}`} id="n" placeholder="N" value={name} onChange={e => setName(e.target.value)}/>
             <label htmlFor="n" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Supervisor Name</label>
         </div>
 
@@ -524,12 +548,12 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
             <div className="grid grid-cols-2 gap-4">
                 <div className="relative group">
                     <div className="absolute left-3 top-3 text-slate-500"><Hash size={16}/></div>
-                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" value={prodCount} onChange={e => setProdCount(e.target.value)}/>
+                    <input type="number" className={`w-full bg-slate-900 border rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none peer placeholder-transparent transition-all ${getBorderColor('prodCount')}`} value={prodCount} onChange={e => setProdCount(e.target.value)}/>
                     <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Total Production</label>
                 </div>
                 <div className="relative group">
                     <div className="absolute left-3 top-3 text-slate-500"><Box size={16}/></div>
-                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" value={boxesUsed} onChange={e => setBoxesUsed(e.target.value)}/>
+                    <input type="number" className={`w-full bg-slate-900 border rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none peer placeholder-transparent transition-all ${getBorderColor('boxesUsed')}`} value={boxesUsed} onChange={e => setBoxesUsed(e.target.value)}/>
                     <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Total Boxes Used</label>
                 </div>
             </div>
@@ -540,12 +564,12 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
             <div className="grid grid-cols-2 gap-4">
                 <div className="relative group">
                     <div className="absolute left-3 top-3 text-emerald-500"><UserCheck size={16}/></div>
-                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-emerald-500 focus:outline-none peer placeholder-transparent transition-all" value={totalPresent} onChange={e => setTotalPresent(e.target.value)}/>
+                    <input type="number" className={`w-full bg-slate-900 border rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none peer placeholder-transparent transition-all ${getBorderColor('totalPresent')}`} value={totalPresent} onChange={e => setTotalPresent(e.target.value)}/>
                     <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-emerald-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-emerald-500 pointer-events-none">Total Present</label>
                 </div>
                 <div className="relative group">
                     <div className="absolute left-3 top-3 text-red-500"><UserX size={16}/></div>
-                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-red-500 focus:outline-none peer placeholder-transparent transition-all" value={totalAbsent} onChange={e => setTotalAbsent(e.target.value)}/>
+                    <input type="number" className={`w-full bg-slate-900 border rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none peer placeholder-transparent transition-all ${getBorderColor('totalAbsent')}`} value={totalAbsent} onChange={e => setTotalAbsent(e.target.value)}/>
                     <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-red-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-red-500 pointer-events-none">Total Absent</label>
                 </div>
             </div>
@@ -556,18 +580,18 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
             <div className="space-y-4">
                  <div className="relative group">
                     <div className="absolute left-3 top-3 text-slate-500"><Layers size={16}/></div>
-                    <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" value={piecesReceived} onChange={e => setPiecesReceived(e.target.value)}/>
+                    <input type="number" className={`w-full bg-slate-900 border rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none peer placeholder-transparent transition-all ${getBorderColor('piecesReceived')}`} value={piecesReceived} onChange={e => setPiecesReceived(e.target.value)}/>
                     <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Total Pieces Received</label>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="relative group">
                         <div className="absolute left-3 top-3 text-emerald-500"><CheckCircle2 size={16}/></div>
-                        <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-emerald-500 focus:outline-none peer placeholder-transparent transition-all" value={okPieces} onChange={e => setOkPieces(e.target.value)}/>
+                        <input type="number" className={`w-full bg-slate-900 border rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none peer placeholder-transparent transition-all ${getBorderColor('okPieces')}`} value={okPieces} onChange={e => setOkPieces(e.target.value)}/>
                         <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-emerald-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-emerald-500 pointer-events-none">Total OK Pieces</label>
                     </div>
                     <div className="relative group">
                         <div className="absolute left-3 top-3 text-red-500"><Ban size={16}/></div>
-                        <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-red-500 focus:outline-none peer placeholder-transparent transition-all" value={rejCount} onChange={e => setRejCount(e.target.value)}/>
+                        <input type="number" className={`w-full bg-slate-900 border rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none peer placeholder-transparent transition-all ${getBorderColor('rejCount')}`} value={rejCount} onChange={e => setRejCount(e.target.value)}/>
                         <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-red-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-red-500 pointer-events-none">Total Rejected</label>
                     </div>
                 </div>
@@ -578,14 +602,14 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
         {dept.id === 'stock' && (
             <div className="relative group">
                 <div className="absolute left-3 top-3 text-cyan-500"><Package size={16}/></div>
-                <input type="number" className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:border-cyan-500 focus:outline-none peer placeholder-transparent transition-all" value={itemsAdded} onChange={e => setItemsAdded(e.target.value)}/>
+                <input type="number" className={`w-full bg-slate-900 border rounded-xl pl-10 pr-4 py-3.5 text-sm text-white focus:outline-none peer placeholder-transparent transition-all ${getBorderColor('itemsAdded')}`} value={itemsAdded} onChange={e => setItemsAdded(e.target.value)}/>
                 <label className="absolute left-10 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-cyan-500 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-cyan-500 pointer-events-none">Total Items Added to Sheet</label>
             </div>
         )}
 
         <div className="relative group">
             <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 text-sm text-white focus:border-blue-500 focus:outline-none peer placeholder-transparent transition-all" id="c" placeholder="C" value={comment} onChange={e => setComment(e.target.value)}/>
-            <label htmlFor="c" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Comments (Optional)</label>
+            <label htmlFor="c" className="absolute left-4 top-[-10px] bg-[#0f172a] px-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider transition-all peer-placeholder-shown:top-4 peer-placeholder-shown:text-slate-500 peer-focus:top-[-10px] peer-focus:text-blue-500 pointer-events-none">Comments</label>
         </div>
 
         {/* --- OPTIONAL LINK UPDATER --- */}
@@ -609,6 +633,13 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
       </button>
       
       {error && <div className="text-center text-xs text-red-400 font-bold animate-pulse">{error}</div>}
+      <style jsx global>{`
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+            20%, 40%, 60%, 80% { transform: translateX(4px); }
+        }
+      `}</style>
     </div>
   );
 }
