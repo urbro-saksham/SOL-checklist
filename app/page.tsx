@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
   CheckCircle2, Lock, ArrowRight, Activity, ShieldCheck, 
-  ExternalLink, KeyRound, X, LayoutGrid, AlertTriangle, 
-  Link as LinkIcon, Maximize2, Save, BarChart3,
+  ExternalLink, ServerCog, KeyRound, X, LayoutGrid, AlertTriangle, 
+  Link as LinkIcon, Maximize2, Save, Cloud, BarChart3,
   Factory, Warehouse, ClipboardCheck, Package, Users, Wifi, Trophy, Loader2,
   ChevronDown, ChevronUp, Hash, Ban, Box, UserCheck, UserX, Layers
 } from 'lucide-react';
@@ -26,6 +26,7 @@ const DEPARTMENT_PINS: Record<string, string> = {
   'it_check': '0769'
 };
 
+
 const DEFAULT_LINKS: Record<string, string> = {
       'floor': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=190658331#gid=190658331',
       'basement': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=1251109391#gid=1251109391',
@@ -34,7 +35,6 @@ const DEFAULT_LINKS: Record<string, string> = {
       'attendance': 'https://docs.google.com/spreadsheets/d/1O20bocLcEgeiUB9r8QdamIPweIbS1KOxpwk4ultJ8RU/edit?gid=0#gid=0',
       'it_check': '#' 
     };
-
 // --- 🎨 THEME CONFIGURATION ---
 const DEPT_THEME: Record<string, any> = {
   'floor': { 
@@ -131,16 +131,28 @@ export default function Home() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleSubmit = async (deptId: string, name: string, comment: string, sheetLink: string) => {
+  const handleSubmit = async (deptId: string, name: string, comment: string, sheetLink: string | null) => {
     setSubmitting(deptId);
-    const res = await fetch('/api/checklist', {
-      method: 'POST',
-      body: JSON.stringify({ rowIndex: 0, deptId, supervisor: name, comment, sheetLink }),
-    });
-    const json = await res.json();
-    if (!res.ok) { alert(json.error || "Failed."); } 
-    else { await fetchData(); setActiveDeptId(null); setEmbeddedLink(null); if (deptId === 'it_check') generateWhatsAppReport(name); }
-    setSubmitting(null);
+    try {
+      const res = await fetch('/api/checklist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deptId, supervisor: name, comment, sheetLink }),
+      });
+      const json = await res.json();
+      if (!res.ok) { 
+        alert(json.error || "Submission Failed"); 
+      } else { 
+        await fetchData(); 
+        setActiveDeptId(null); 
+        setEmbeddedLink(null); 
+        if (deptId === 'it_check') generateWhatsAppReport(name); 
+      }
+    } catch (e) {
+      alert("Connection Failed");
+    } finally {
+      setSubmitting(null);
+    }
   };
 
   const handleOwnerLogin = () => {
@@ -491,11 +503,12 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
         finalComment = `[${metrics.join(' | ')}] ${comment}`;
     }
 
+    // Pass link only if it exists, otherwise null
     onSubmit(dept.id, name, finalComment, link.trim() ? link : null);
   };
 
   const getBorderColor = (fieldName: string) => {
-      return fieldErrors[fieldName] ? 'border-red-500 animate-[shake_0.5s]' : 'border-slate-700 focus:border-blue-500';
+      return fieldErrors[fieldName] ? 'border-red-500 ring-1 ring-red-500 animate-[shake_0.5s]' : 'border-slate-700 focus:border-blue-500';
   };
 
   if (!isVerified) {
