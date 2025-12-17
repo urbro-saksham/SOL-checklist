@@ -23,8 +23,9 @@ const DEPARTMENT_PINS: Record<string, string> = {
   'quality': '4030',
   'stock': '1993',
   'attendance': '9389',
-  'it_check': '6006'
+  'it_check': '0769'
 };
+
 
 const DEFAULT_LINKS: Record<string, string> = {
       'floor': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=190658331#gid=190658331',
@@ -34,7 +35,6 @@ const DEFAULT_LINKS: Record<string, string> = {
       'attendance': 'https://docs.google.com/spreadsheets/d/1O20bocLcEgeiUB9r8QdamIPweIbS1KOxpwk4ultJ8RU/edit?gid=0#gid=0',
       'it_check': '#' 
     };
-
 // --- 🎨 THEME CONFIGURATION ---
 const DEPT_THEME: Record<string, any> = {
   'floor': { 
@@ -428,9 +428,24 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
   };
 
   const handleFinalSubmit = () => {
+    // 1. Validate Name
     if (!name.trim()) { setError("Name Required"); return; }
-    if (showLinkInput && dept.id !== 'it_check' && !link.includes('docs.google.com/spreadsheets')) { 
-        setError("Valid Google Sheet Link Required"); return; 
+    
+    // 2. Validate Link (ONLY IF PROVIDED)
+    // If link is empty, it's valid. If link is NOT empty, check it.
+    if (link.trim() && !link.includes('docs.google.com/spreadsheets')) { 
+        setError("Invalid Google Sheet Link"); return; 
+    }
+
+    // 3. Validate MANDATORY Dynamic Fields
+    if (dept.id === 'floor' || dept.id === 'basement') {
+        if (!prodCount || !boxesUsed) { setError("Production & Boxes fields are mandatory"); return; }
+    } else if (dept.id === 'attendance') {
+        if (!totalPresent || !totalAbsent) { setError("Attendance fields are mandatory"); return; }
+    } else if (dept.id === 'quality') {
+        if (!piecesReceived || !okPieces || !rejCount) { setError("All Quality fields are mandatory"); return; }
+    } else if (dept.id === 'stock') {
+        if (!itemsAdded) { setError("Items Added field is mandatory"); return; }
     }
 
     // --- SMART PACKING LOGIC ---
@@ -455,7 +470,8 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
         finalComment = `[${metrics.join(' | ')}] ${comment}`;
     }
 
-    onSubmit(dept.id, name, finalComment, showLinkInput ? link : null);
+    // Pass link only if it exists, otherwise null
+    onSubmit(dept.id, name, finalComment, link.trim() ? link : null);
   };
 
   if (!isVerified) {
@@ -576,7 +592,7 @@ function ActiveForm({ dept, requiredPin, savedLink, onOpenSheet, onSubmit, isSub
         {dept.id !== 'it_check' && (
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden">
                 <button onClick={() => setShowLinkInput(!showLinkInput)} className="w-full flex items-center justify-between p-4 text-xs font-bold text-slate-400 hover:text-white transition-colors">
-                    <span className="flex items-center gap-2"><LinkIcon size={14}/> UPDATE SHEET LINK?</span>
+                    <span className="flex items-center gap-2"><LinkIcon size={14}/> UPDATE SHEET LINK? (OPTIONAL)</span>
                     {showLinkInput ? <ChevronUp size={14}/> : <ChevronDown size={14}/>}
                 </button>
                 {showLinkInput && (
