@@ -1,5 +1,5 @@
 'use client';
-
+// Test Commit
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, BarChart3, TrendingUp, Activity, AlertTriangle, Users, Trophy } from 'lucide-react';
