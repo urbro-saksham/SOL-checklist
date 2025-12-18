@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // Call the "Keyword Hunter" function we added to lib/sheets.ts
+    // Call the updated "Keyword Hunter" function
     const metrics = await fetchDashboardMetrics();
     
     return NextResponse.json({ 

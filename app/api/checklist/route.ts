@@ -1,58 +1,57 @@
 import { NextResponse } from 'next/server';
-import { createTodayRow, updateDepartmentData, updateStoredLink, DEPARTMENTS, getTodayRow } from '@/lib/sheets';
+import { createTodayRow, updateDepartmentData, updateStoredLink, logDepartmentData, DEPARTMENTS, getTodayRow } from '@/lib/sheets';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { deptId, supervisor, comment, sheetLink } = body;
+    const { 
+        deptId, supervisor, comment, sheetLink,
+        prodCount, boxesUsed, totalPresent, totalAbsent, 
+        piecesReceived, okPieces, rejCount, itemsAdded 
+    } = body;
 
-    // 1. Validate ONLY Mandatory Fields (Link is NOT mandatory anymore)
+    // 1. Mandatory Check
     if (!deptId || !supervisor) {
       return NextResponse.json({ error: "Missing Name or ID" }, { status: 400 });
     }
 
-    // 2. Find the correct column for this department
     const dept = DEPARTMENTS.find(d => d.id === deptId);
     if (!dept) return NextResponse.json({ error: "Invalid Dept" }, { status: 400 });
 
-    // 3. Get Time
+    // 2. Prepare Time
     const now = new Date();
-    // Convert to IST
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istDate = new Date(now.getTime() + istOffset);
-    
-    // Format Time (e.g., "06:30 PM")
     let timeStr = istDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-    // Check Late Status (After 7:30 PM)
-    const hours = istDate.getUTCHours();
-    const minutes = istDate.getUTCMinutes();
-    // 7:30 PM IST is roughly 14:00 UTC (depending on base), simpler to just check hours/mins relative to start of day
-    // Let's use simple logic: If Hour is 19 (7PM) and Min > 30, or Hour > 19.
+    
+    // Late Logic
     const isLate = (istDate.getHours() > 19) || (istDate.getHours() === 19 && istDate.getMinutes() > 30);
-    
-    if (isLate) {
-        timeStr += " 🔴 LATE";
-    }
+    if (isLate) timeStr += " 🔴 LATE";
 
-    // 4. Update the Google Sheet Data (Sheet1)
+    // 3. Update MAIN SHEET (Status Board)
     const dateStr = istDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-    
-    // Ensure "Today's Row" exists
     let rowInfo = await getTodayRow(dateStr);
     if (!rowInfo) {
         await createTodayRow(dateStr);
-        rowInfo = await getTodayRow(dateStr); // Fetch again
+        rowInfo = await getTodayRow(dateStr);
     }
 
     if (rowInfo) {
         // [Time, Name, Comment, Link]
-        // Note: We save the link in the log if provided, otherwise just "-"
         const dataToSave = [timeStr, supervisor, comment || "", sheetLink || "-"];
         await updateDepartmentData(rowInfo.rowIndex, dept.startCol, dataToSave);
     }
 
-    // 5. Update the Stored Link (Config_Links) ONLY IF PROVIDED
+    // 4. LOG TO SEPARATE DATABASE SHEET
+    const rawData = { 
+        supervisor, comment, sheetLink,
+        prodCount, boxesUsed, totalPresent, totalAbsent, 
+        piecesReceived, okPieces, rejCount, itemsAdded 
+    };
+    
+    await logDepartmentData(deptId, rawData);
+
+    // 5. Update Config Link (only if valid)
     if (sheetLink && sheetLink.includes('docs.google.com')) {
         await updateStoredLink(deptId, sheetLink);
     }
@@ -80,12 +79,6 @@ export async function GET() {
       let data = { timestamp: '', supervisor: '', comment: '' };
 
       if (rowInfo && rowInfo.data) {
-        // Data structure in sheet: [Time, Name, Comment, Link]
-        const colIdx = dept.startCol; // 0-indexed from sheet array? No, Sheet API returns 0-indexed array relative to A1
-        // API returns array of strings. row[0] is Date.
-        // Index mapping:
-        // Dept 1 (Floor): Cols 1,2,3,4 (Indices 1,2,3,4)
-        // Dept 2: Indices 5,6,7,8
         const time = rowInfo.data[dept.startCol];
         if (time) {
             isCompleted = true;
