@@ -7,167 +7,171 @@ export default function TechLoader() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // 1. Progress Logic (Simulate Loading)
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) return 100;
-        // Non-linear speed: Fast at start, slows down at end for realism
-        const increment = Math.max(0.5, (100 - prev) / 20); 
-        return prev + increment;
+        // Burning starts fast then varies speed for realism
+        return prev + (Math.random() * 0.8 + 0.2); 
       });
     }, 50);
 
     return () => clearInterval(interval);
   }, []);
 
+  // Calculate position: 0% progress = Fire at Tip (Right), 100% progress = Fire at Filter (Left)
+  // We want the burn to travel from Right to Left.
+  // The 'left' position of the flame relative to the paper body (0 to 100%)
+  const flamePosition = 100 - progress; 
+
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#050505] flex flex-col items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 z-[9999] bg-[#080808] flex flex-col items-center justify-center overflow-hidden font-sans">
       
-      {/* --- BACKGROUND AMBIENCE --- */}
+      {/* --- CINEMATIC BACKGROUND --- */}
       <div className="absolute inset-0 pointer-events-none">
-         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a1a_0%,_#000000_100%)] opacity-80"></div>
-         {/* Subtle Smoke Fog in Background */}
-         <div className="absolute top-0 left-0 w-full h-full bg-[url('https://raw.githubusercontent.com/PlayLikeLoki/assets/main/noise.png')] opacity-[0.03] animate-pulse"></div>
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#1a1a1a_0%,_#000000_120%)]"></div>
+         {/* Subtle Smoke Atmosphere */}
+         <div className="absolute top-0 left-0 w-full h-full opacity-[0.05] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] animate-pulse"></div>
       </div>
 
-      {/* --- CONTENT CONTAINER --- */}
-      <div className="relative z-10 flex flex-col items-center w-full max-w-2xl transform scale-75 md:scale-100 transition-transform duration-500">
+      {/* --- MAIN STAGE --- */}
+      <div className="relative z-10 flex flex-col items-center w-full max-w-4xl scale-90 md:scale-110 transition-transform duration-700">
         
-        {/* LOGO (Floating) */}
-        <div className="relative w-32 h-32 mb-16 animate-[float_6s_ease-in-out_infinite]">
-           <div className="absolute inset-0 bg-white/5 blur-2xl rounded-full animate-pulse"></div>
-           <Image src="/logo.webp" alt="Sol France" fill className="object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
+        {/* LOGO */}
+        <div className="relative w-28 h-28 mb-20 drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] animate-[float_4s_ease-in-out_infinite]">
+           <Image src="/logo.webp" alt="Sol France" fill className="object-contain" priority />
         </div>
 
-        {/* --- 3D BURNING CONE ASSEMBLY --- */}
-        {/* We rotate the entire assembly to give a 3D perspective view */}
-        <div className="relative w-[500px] h-[100px] flex items-center transform -rotate-6 perspective-1000">
+        {/* --- 3D CONE ASSEMBLY --- */}
+        {/* Rotated slightly for 3D perspective */}
+        <div className="relative w-[600px] h-[120px] flex items-center transform -rotate-[5deg]">
             
-            {/* 1. FILTER TIP (The base) */}
-            <div className="relative w-[120px] h-[50px] z-20">
-                {/* 3D Cylinder Shape for Filter */}
-                <div className="absolute inset-0 rounded-l-md border-r border-yellow-900/30 overflow-hidden"
+            {/* 1. THE FILTER (Static Base - Left Side) */}
+            <div className="relative w-[140px] h-[60px] z-30 drop-shadow-2xl">
+                {/* 3D Cylinder Look */}
+                <div className="absolute inset-0 rounded-l-sm border-r border-black/20"
                      style={{
-                         background: 'linear-gradient(180deg, #dcbfa6 0%, #8b6c4e 40%, #e8d0ba 50%, #8b6c4e 60%, #5e4630 100%)',
-                         boxShadow: 'inset 0 2px 10px rgba(0,0,0,0.5)'
+                         background: 'linear-gradient(180deg, #c7a78b 0%, #e8d0ba 30%, #8b6c4e 60%, #5e4630 100%)',
+                         clipPath: 'polygon(0% 10%, 100% 0%, 100% 100%, 0% 90%)'
                      }}>
-                     {/* W Pattern Texture */}
-                     <div className="absolute inset-0 opacity-20" 
-                          style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent 0px, transparent 2px, #3e2b18 3px)' }}>
-                     </div>
-                     <div className="absolute right-0 top-0 bottom-0 w-2 bg-black/20 blur-[1px]"></div>
+                     {/* Filter Texture Pattern */}
+                     <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'repeating-linear-gradient(90deg, transparent 0px, transparent 2px, #3e2b18 2px, #3e2b18 3px)' }}></div>
+                     {/* Gold Band (Branding) */}
+                     <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-r from-yellow-600 via-yellow-300 to-yellow-700 opacity-80 mix-blend-overlay"></div>
                 </div>
-                {/* End Cap of Filter (3D effect) */}
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-[50px] bg-[#5e4630] rounded-[50%] z-10 brightness-50"></div>
+                {/* 3D End Cap (The mouth end) */}
+                <div className="absolute left-[-5px] top-1/2 -translate-y-1/2 w-4 h-[48px] bg-[#3e2b18] rounded-[50%] blur-[0.5px]"></div>
             </div>
 
-            {/* 2. CONE BODY (The Paper) */}
-            {/* This uses a conical gradient and 3D lighting simulation */}
-            <div className="relative w-[380px] h-[70px] -ml-1 z-10 origin-left">
+            {/* 2. THE PAPER BODY (Burning Area) */}
+            <div className="relative w-[460px] h-[80px] -ml-[2px] z-20 origin-left">
                 
-                {/* The Paper Shape (Trapezoid) */}
+                {/* Main Cone Shape Mask */}
                 <div className="absolute inset-0 overflow-hidden"
                      style={{ 
-                         clipPath: 'polygon(0% 15%, 100% 0%, 100% 100%, 0% 85%)', // Tapered Cone Shape
+                         clipPath: 'polygon(0% 12%, 100% 0%, 100% 100%, 0% 88%)'
                      }}>
                     
-                    {/* A. Paper Texture & Volume */}
+                    {/* A. UNBURNT PAPER (White/Cream) */}
+                    {/* This sits across the whole width, but we cover it with Ash as we burn */}
                     <div className="absolute inset-0 w-full h-full"
                          style={{
-                             background: 'linear-gradient(180deg, #e6e6e6 0%, #ffffff 45%, #ffffff 55%, #b3b3b3 100%)', // 3D Cylinder Lighting
+                             background: 'linear-gradient(180deg, #d1d1d1 0%, #ffffff 40%, #f0f0f0 60%, #a1a1a1 100%)', // 3D Lighting
                          }}>
-                         {/* Subtle Paper Fiber Texture */}
-                         <div className="absolute inset-0 opacity-[0.07]" 
-                              style={{ filter: 'contrast(200%)', backgroundImage: 'url("https://www.transparenttextures.com/patterns/paper-fibers.png")' }}>
-                         </div>
+                         {/* Paper Fibers Texture */}
+                         <div className="absolute inset-0 opacity-[0.08]" style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/paper-fibers.png")', filter: 'contrast(150%)' }}></div>
                     </div>
 
-                    {/* B. Branding Text (Optional - Projected on 3D surface) */}
-                    <div className="absolute top-1/2 left-10 -translate-y-1/2 text-[40px] font-black text-black/5 opacity-30 tracking-tighter scale-y-150 select-none">
-                        SOLFRANCE
-                    </div>
-
-                    {/* C. THE BURN MASK (This handles the "loading") */}
-                    <div className="absolute inset-0 z-20"
+                    {/* B. THE ASH TRAIL (Gray/Black) */}
+                    {/* This layer sits on TOP of the paper and grows from Right to Left */}
+                    <div className="absolute inset-0 z-10 transition-all duration-75 ease-linear"
                          style={{
-                             background: `linear-gradient(to right, transparent ${progress}%, #111 ${progress + 5}%)`
+                             // We use a gradient mask to reveal the ash from right to left
+                             background: `linear-gradient(to left, #2b2b2b ${progress}%, transparent ${progress + 5}%)`
                          }}>
+                         {/* Ash Texture (Cracked) */}
+                         <div className="absolute inset-0 opacity-40 mix-blend-multiply" 
+                              style={{ backgroundImage: 'url("https://www.transparenttextures.com/patterns/cracked-ground.png")' }}>
+                         </div>
+                         {/* Darken the ash cylinder 3D effect */}
+                         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
                     </div>
 
-                    {/* D. THE GLOWING EMBER LINE (At the burn edge) */}
-                    <div className="absolute inset-0 z-30 opacity-100 will-change-transform"
+                    {/* C. THE GLOWING EMBER (The "Cherry") */}
+                    {/* Positioned exactly at the burn line */}
+                    <div className="absolute top-0 bottom-0 w-[20px] z-20 blur-[2px]"
                          style={{ 
-                             transform: `translateX(${progress}%)`,
-                             width: '100%' 
+                             left: `${flamePosition}%`, 
+                             background: 'radial-gradient(circle, #ffeb3b 10%, #ff5722 50%, transparent 80%)',
+                             opacity: progress < 100 ? 1 : 0
                          }}>
-                         {/* The bright orange burn line */}
-                         <div className="absolute left-[-5px] top-0 bottom-0 w-[10px] bg-red-600 blur-[4px] mix-blend-color-dodge animate-pulse"></div>
-                         <div className="absolute left-[-2px] top-0 bottom-0 w-[4px] bg-yellow-300 blur-[2px] mix-blend-screen"></div>
                     </div>
                 </div>
 
                 {/* 3. PARTICLE SYSTEM (Fire & Smoke) */}
-                {/* Attached to the progress position */}
-                <div className="absolute top-1/2 z-50 pointer-events-none"
-                     style={{ 
-                         left: `${(progress / 100) * 380}px`,
-                         transform: 'translateY(-50%)' 
-                     }}>
-                     
-                     {/* Flame Core */}
-                     <div className="relative -top-8 -left-4">
-                        {/* Layered Flames for Realism */}
-                        <div className="absolute w-12 h-24 bg-orange-500 rounded-full blur-xl opacity-40 animate-[flame_0.1s_infinite_alternate] mix-blend-screen origin-bottom"></div>
-                        <div className="absolute w-8 h-16 bg-yellow-500 rounded-full blur-lg opacity-60 animate-[flame_0.15s_infinite_alternate-reverse] mix-blend-screen origin-bottom ml-2 mt-4"></div>
-                        <div className="absolute w-4 h-10 bg-white rounded-full blur-md opacity-80 animate-[flame_0.2s_infinite_alternate] mix-blend-screen origin-bottom ml-4 mt-8"></div>
+                {/* Moves with the burn line */}
+                {progress < 99 && (
+                    <div className="absolute top-1/2 -translate-y-1/2 z-50 pointer-events-none transition-all duration-75 linear"
+                         style={{ left: `${flamePosition}%` }}>
                         
-                        {/* Flying Sparks */}
-                        <div className="spark-1 absolute w-1 h-1 bg-yellow-200 rounded-full animate-[spark_1s_linear_infinite]"></div>
-                        <div className="spark-2 absolute w-1 h-1 bg-orange-300 rounded-full animate-[spark_1.2s_linear_infinite_0.2s]"></div>
-                        <div className="spark-3 absolute w-1 h-1 bg-white rounded-full animate-[spark_0.8s_linear_infinite_0.5s]"></div>
-                     </div>
+                        {/* THE FLAME CORE */}
+                        <div className="relative -top-6 -left-4">
+                            {/* Inner White Hot Core */}
+                            <div className="absolute bottom-0 left-2 w-4 h-8 bg-white rounded-[50%] blur-md animate-[flicker_0.1s_infinite_alternate]"></div>
+                            {/* Middle Orange Flame */}
+                            <div className="absolute bottom-0 left-0 w-8 h-16 bg-orange-500 rounded-[50%] blur-lg opacity-80 mix-blend-screen animate-[flicker_0.15s_infinite_alternate-reverse]"></div>
+                            {/* Outer Red Glow */}
+                            <div className="absolute bottom-[-10px] left-[-10px] w-14 h-24 bg-red-600 rounded-[50%] blur-2xl opacity-40 mix-blend-screen animate-[pulse_0.2s_infinite]"></div>
+                        </div>
 
-                     {/* Smoke Plume */}
-                     <div className="absolute -top-12 -left-2 w-20 h-40 opacity-30 mix-blend-overlay">
-                        <div className="absolute w-10 h-10 bg-gray-500 rounded-full blur-xl animate-[smoke_2s_linear_infinite]"></div>
-                        <div className="absolute w-12 h-12 bg-gray-400 rounded-full blur-xl animate-[smoke_2.5s_linear_infinite_0.5s]"></div>
-                     </div>
-                </div>
+                        {/* RISING SMOKE */}
+                        <div className="absolute -top-12 -left-2">
+                            <div className="absolute w-12 h-12 bg-gray-400 rounded-full blur-xl opacity-20 animate-[smoke_2s_linear_infinite]"></div>
+                            <div className="absolute w-10 h-10 bg-gray-500 rounded-full blur-xl opacity-15 animate-[smoke_2.5s_linear_infinite_0.5s]"></div>
+                            <div className="absolute w-14 h-14 bg-white rounded-full blur-2xl opacity-10 animate-[smoke_3s_linear_infinite_1s]"></div>
+                        </div>
+
+                        {/* FALLING SPARKS */}
+                        <div className="absolute top-0 left-0">
+                             <div className="absolute w-1 h-1 bg-yellow-300 rounded-full animate-[spark_1s_ease-out_infinite]"></div>
+                             <div className="absolute w-1 h-1 bg-orange-400 rounded-full animate-[spark_1.5s_ease-out_infinite_0.3s]"></div>
+                        </div>
+                    </div>
+                )}
 
             </div>
         </div>
 
         {/* --- LOADING TEXT --- */}
-        <div className="mt-20 text-center">
-            <h2 className="text-xl font-bold tracking-[0.5em] text-white/90 animate-pulse">LOADING</h2>
-            <div className="text-[10px] text-orange-500/80 font-mono mt-2 tracking-widest">
-                ASSEMBLING PRODUCTION LINE... {Math.round(progress)}%
+        <div className="mt-24 text-center">
+            <h2 className="text-2xl font-black tracking-[0.3em] text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-200 animate-pulse">
+                INITIALIZING
+            </h2>
+            <div className="text-[10px] text-white/40 font-mono mt-3 tracking-[0.5em] uppercase">
+                Preparing Production Line • {Math.round(progress)}%
             </div>
         </div>
 
       </div>
 
-      {/* --- ANIMATIONS --- */}
+      {/* --- CSS ANIMATIONS --- */}
       <style jsx>{`
+        @keyframes flicker {
+            0% { transform: scale(1) skewX(0deg); opacity: 0.9; }
+            50% { transform: scale(1.05) skewX(2deg); opacity: 0.8; }
+            100% { transform: scale(0.95) skewX(-2deg); opacity: 1; }
+        }
         @keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(2deg); }
-        }
-        @keyframes flame {
-            0% { transform: scaleY(1) skewX(0deg); }
-            100% { transform: scaleY(1.1) skewX(2deg); }
-        }
-        @keyframes spark {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            100% { transform: translate(20px, -50px) scale(0); opacity: 0; }
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
         }
         @keyframes smoke {
-            0% { transform: translate(0, 0) scale(1); opacity: 0; }
-            20% { opacity: 0.5; }
-            100% { transform: translate(30px, -100px) scale(3); opacity: 0; }
+            0% { transform: translate(0, 0) scale(0.5); opacity: 0; }
+            20% { opacity: 0.3; }
+            100% { transform: translate(20px, -80px) scale(2); opacity: 0; }
         }
-        .perspective-1000 {
-            perspective: 1000px;
+        @keyframes spark {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(-30px, 40px); opacity: 0; }
         }
       `}</style>
     </div>
