@@ -9,7 +9,8 @@ import {
   ExternalLink, ServerCog, KeyRound, X, LayoutGrid, AlertTriangle, 
   Link as LinkIcon, Maximize2, Save, Cloud, BarChart3,
   Factory, Warehouse, ClipboardCheck, Package, Users, Wifi, Trophy, Loader2,
-  ChevronDown, ChevronUp, Hash, Ban, Box, UserCheck, UserX, Layers
+  ChevronDown, ChevronUp, Hash, Ban, Box, UserCheck, UserX, Layers,
+  Crown, Medal, Clock // Added Crown, Medal, Clock
 } from 'lucide-react';
 import TechLoader from '@/components/TechLoader';
 
@@ -91,6 +92,9 @@ export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any[]>([]);
+  // Store Rank Data
+  const [ranks, setRanks] = useState<{ leaderboard: any[], champions: any }>({ leaderboard: [], champions: {} });
+  
   const [activeDeptId, setActiveDeptId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<string | null>(null);
   const [embeddedLink, setEmbeddedLink] = useState<string | null>(null);
@@ -118,10 +122,18 @@ export default function Home() {
   const fetchData = async () => {
     try {
       await new Promise(r => setTimeout(r, 1500));
+      
+      // Fetch Checklist Data
       const res = await fetch('/api/checklist');
       if (!res.ok) throw new Error("Failed");
       const json = await res.json();
       setData(json.departments || []);
+
+      // Fetch Leaderboard/Rank Data
+      const rankRes = await fetch('/api/leaderboard');
+      const rankJson = await rankRes.json();
+      setRanks(rankJson || { leaderboard: [], champions: {} });
+
     } catch (e) {
       console.error(e);
     } finally {
@@ -377,6 +389,55 @@ export default function Home() {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-xl animate-in fade-in duration-300" onClick={() => setActiveDeptId(null)}/>
           <div className="relative w-full max-w-lg bg-[#0f172a] border border-slate-700 rounded-[2rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
             
+            {/* 🏆 CHAMPION BANNERS & LATE STATUS */}
+            {(() => {
+                const isWeekly = ranks.champions?.weekly === activeDept.id;
+                const isMonthly = ranks.champions?.monthly === activeDept.id;
+                const rankIndex = ranks.leaderboard?.findIndex((r: any) => r.id === activeDept.id);
+                const currentRank = rankIndex !== -1 ? rankIndex + 1 : '-';
+                
+                // 9 PM Check (IST)
+                const now = new Date();
+                const istOffset = 5.5 * 60 * 60 * 1000;
+                const istDate = new Date(now.getTime() + istOffset);
+                const isPast9PM = istDate.getHours() >= 21;
+
+                return (
+                    <div className="flex flex-col w-full">
+                        {/* 1. LATE YESTERDAY ALERT */}
+                        {activeDept.lateYesterday && (
+                           <div className="bg-red-500/10 border-b border-red-500/20 py-2 flex items-center justify-center gap-2 animate-pulse">
+                              <Clock size={14} className="text-red-500"/>
+                              <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest">Late Submission Yesterday</span>
+                           </div>
+                        )}
+
+                        {/* 2. MONTHLY CHAMPION */}
+                        {isMonthly && (
+                            <div className="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 text-black font-black text-center py-2 text-xs uppercase tracking-widest flex items-center justify-center gap-2 animate-[pulse_3s_infinite]">
+                                <Crown size={14} fill="black" /> 👑 You are this Month's Champion
+                            </div>
+                        )}
+
+                        {/* 3. WEEKLY CHAMPION */}
+                        {isWeekly && !isMonthly && (
+                            <div className="bg-gradient-to-r from-blue-600 via-indigo-500 to-blue-600 text-white font-black text-center py-2 text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.3)]">
+                                <Medal size={14} /> 🏆 You are this Week's Champion
+                            </div>
+                        )}
+
+                        {/* 4. RANKING STRIP */}
+                        <div className="bg-slate-900 border-b border-slate-800 py-1.5 flex justify-center gap-4">
+                            <div className="text-[10px] text-slate-400 font-mono flex items-center gap-2">
+                                <span className={isPast9PM ? "text-red-400" : "text-green-400"}>●</span> 
+                                {isPast9PM ? "FINAL RANKING:" : "LIVE RANK:"} 
+                                <span className="text-white font-bold text-sm">#{currentRank}</span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* Modal Header */}
             <div className="bg-[#1e293b]/80 p-6 border-b border-slate-700/50 flex justify-between items-center backdrop-blur-md">
               <div>

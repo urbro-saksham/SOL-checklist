@@ -37,6 +37,33 @@ async function getAuthSheets() {
   return google.sheets({ version: 'v4', auth: await auth.getClient() as any });
 }
 
+// --- 1. NEW HELPER: Fetch ANY Row by Date ---
+export async function getRowByDate(dateStr: string) {
+  const sheets = await getAuthSheets();
+  const response = await sheets.spreadsheets.values.get({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: 'Sheet1!A:Z' });
+  const rows = response.data.values || [];
+  const rowIndex = rows.findIndex((row) => row[0] === dateStr);
+  if (rowIndex === -1) return null;
+  return { rowIndex: rowIndex + 1, data: rows[rowIndex] };
+}
+
+// --- 2. WRAPPER (Keeps existing logic working) ---
+export async function getTodayRow(dateStr: string) {
+  return getRowByDate(dateStr);
+}
+
+export async function createTodayRow(dateStr: string) {
+  const sheets = await getAuthSheets();
+  await sheets.spreadsheets.values.append({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: 'Sheet1!A:A', valueInputOption: 'USER_ENTERED', requestBody: { values: [[dateStr, ...Array(25).fill('')]] } });
+}
+
+export async function updateDepartmentData(rowIndex: number, colIndex: number, data: string[]) {
+  const sheets = await getAuthSheets();
+  const startChar = getColumnLetter(colIndex);
+  const endChar = getColumnLetter(colIndex + 3);
+  await sheets.spreadsheets.values.update({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: `Sheet1!${startChar}${rowIndex}:${endChar}${rowIndex}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [data] } });
+}
+
 export async function getStoredLinks() {
   const sheets = await getAuthSheets();
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
@@ -63,13 +90,10 @@ export async function updateStoredLink(deptId: string, newLink: string) {
   }
 }
 
-// --- 📝 SEPARATE SHEET LOGGING (DATABASE) ---
+// --- 📝 LOGGING (DATABASE) ---
 export async function logDepartmentData(deptId: string, data: DepartmentData) {
     const sheets = await getAuthSheets();
     const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-    
-    // Define the specific sheet name for this department
-    // Ensure these tabs exist in your Google Sheet: "DB_Floor", "DB_Quality", etc.
     const targetSheet = `DB_${deptId.charAt(0).toUpperCase() + deptId.slice(1)}`; 
     
     const now = new Date();
@@ -78,21 +102,16 @@ export async function logDepartmentData(deptId: string, data: DepartmentData) {
     const dateStr = istDate.toLocaleDateString('en-IN');
     const timeStr = istDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-    // COMMON COLS: [Date, Time, Supervisor, Link, Comments]
     const common = [dateStr, timeStr, data.supervisor, data.sheetLink || "-", data.comment || ""];
     let rowValues: string[] = [];
 
     if (deptId === 'floor' || deptId === 'basement') {
-        // [..., Production, Boxes]
         rowValues = [...common, data.prodCount || "0", data.boxesUsed || "0"];
     } else if (deptId === 'attendance') {
-        // [..., Present, Absent]
         rowValues = [...common, data.totalPresent || "0", data.totalAbsent || "0"];
     } else if (deptId === 'quality') {
-        // [..., Received, OK, Rejected]
         rowValues = [...common, data.piecesReceived || "0", data.okPieces || "0", data.rejCount || "0"];
     } else if (deptId === 'stock') {
-        // [..., Items Added]
         rowValues = [...common, data.itemsAdded || "0"];
     } else {
         rowValues = common;
@@ -106,27 +125,14 @@ export async function logDepartmentData(deptId: string, data: DepartmentData) {
             requestBody: { values: [rowValues] }
         });
     } catch (e) {
-        console.error(`Error logging to ${targetSheet}. Ensure the tab exists!`, e);
+        console.error(`Error logging to ${targetSheet}`, e);
     }
 }
 
-// --- 📊 DASHBOARD INTELLIGENCE ENGINE ---
+// --- 📊 DASHBOARD METRICS ---
 export async function fetchDashboardMetrics() {
   const links = await getStoredLinks();
   const targetDepts = ['floor', 'basement', 'quality']; 
-  
-  const now = new Date();
-  const istOffset = 5.5 * 60 * 60 * 1000;
-  const today = new Date(now.getTime() + istOffset);
-  
-  // Date formats to match in the sheets
-  const dateFormats = [
-      today.toLocaleDateString('en-IN'), 
-      today.toLocaleDateString('en-GB'),
-      `${today.getDate()}-${today.toLocaleString('default', { month: 'short' })}`,
-      today.toISOString().split('T')[0]
-  ];
-
   const metricMap: Record<string, string[]> = {
     'Brands': ['brand', 'sku name', 'product name'],
     'RFS': ['total rfs', 'rfs'],
@@ -157,36 +163,24 @@ export async function fetchDashboardMetrics() {
   for (const dept of targetDepts) {
     const link = links[dept];
     if (!link) continue;
-    
     const matches = link.match(/\/d\/([a-zA-Z0-9-_]+)/);
     if (!matches || !matches[1]) continue;
-    const sheetId = matches[1];
-
+    
     try {
       const sheets = await getAuthSheets();
-      const response = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range: 'A1:Z500' });
+      const response = await sheets.spreadsheets.values.get({ spreadsheetId: matches[1], range: 'A1:Z500' });
       const rows = response.data.values || [];
-
       rows.forEach((row) => {
-        // Simple logic: Scan for keywords.
-        // In a real production scenario, we should also check if the row has Today's date.
-        // For now, we aggregate everything found in the visible range (A1:Z500) that matches the keywords.
-        
         row.forEach((cell, cIndex) => {
           if (!cell) return;
           const cellText = cell.toString().toLowerCase().trim();
-
           for (const [metricKey, keywords] of Object.entries(metricMap)) {
             if (keywords.some(k => cellText === k || cellText.includes(k))) {
-              let value = row[cIndex + 1]; 
-              if (!value && row[cIndex + 2]) value = row[cIndex + 2];
-
+              let value = row[cIndex + 1] || row[cIndex + 2];
               if (value) {
                 const cleanValue = value.toString().replace(/[^0-9.]/g, '');
                 if (metricKey === 'Brands') {
-                   if (!aggregatedData[metricKey].toString().includes(value)) {
-                       aggregatedData[metricKey] += value + ", ";
-                   }
+                   if (!aggregatedData[metricKey].toString().includes(value)) aggregatedData[metricKey] += value + ", ";
                 } else {
                    aggregatedData[metricKey] = (Number(aggregatedData[metricKey]) || 0) + Number(cleanValue);
                 }
@@ -195,31 +189,17 @@ export async function fetchDashboardMetrics() {
           }
         });
       });
-    } catch (e) { console.error(`Failed to read sheet ${dept}`, e); }
+    } catch (e) { console.error(`Failed to read ${dept}`, e); }
   }
   return aggregatedData;
 }
 
-// --- STANDARD EXPORTS ---
-export async function getTodayRow(dateStr: string) {
-  const sheets = await getAuthSheets();
-  const response = await sheets.spreadsheets.values.get({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: 'Sheet1!A:Z' });
-  const rows = response.data.values || [];
-  const rowIndex = rows.findIndex((row) => row[0] === dateStr);
-  if (rowIndex === -1) return null;
-  return { rowIndex: rowIndex + 1, data: rows[rowIndex] };
-}
-
-export async function createTodayRow(dateStr: string) {
-  const sheets = await getAuthSheets();
-  await sheets.spreadsheets.values.append({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: 'Sheet1!A:A', valueInputOption: 'USER_ENTERED', requestBody: { values: [[dateStr, ...Array(25).fill('')]] } });
-}
-
-export async function updateDepartmentData(rowIndex: number, colIndex: number, data: string[]) {
-  const sheets = await getAuthSheets();
-  const startChar = getColumnLetter(colIndex);
-  const endChar = getColumnLetter(colIndex + 3);
-  await sheets.spreadsheets.values.update({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: `Sheet1!${startChar}${rowIndex}:${endChar}${rowIndex}`, valueInputOption: 'USER_ENTERED', requestBody: { values: [data] } });
+export async function getLeaderboardData() {
+    const sheets = await getAuthSheets();
+    try {
+      const response = await sheets.spreadsheets.values.get({ spreadsheetId: process.env.GOOGLE_SHEET_ID, range: 'Sheet1!A:Z' });
+      return response.data.values ? response.data.values.slice(1) : [];
+    } catch (e) { return []; }
 }
 
 function getColumnLetter(colIndex: number) {
@@ -229,13 +209,4 @@ function getColumnLetter(colIndex: number) {
     colIndex = Math.floor(colIndex / 26) - 1;
   }
   return letter;
-}
-
-export async function getLeaderboardData() {
-    const sheets = await getAuthSheets();
-    const spreadsheetId = process.env.GOOGLE_SHEET_ID;
-    try {
-      const response = await sheets.spreadsheets.values.get({ spreadsheetId, range: 'Sheet1!A:Z' });
-      return response.data.values ? response.data.values.slice(1) : [];
-    } catch (e) { return []; }
 }

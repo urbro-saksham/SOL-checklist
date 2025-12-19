@@ -1,5 +1,14 @@
 import { NextResponse } from 'next/server';
-import { createTodayRow, updateDepartmentData, updateStoredLink, logDepartmentData, DEPARTMENTS, getTodayRow } from '@/lib/sheets';
+import { 
+  createTodayRow, 
+  updateDepartmentData, 
+  updateStoredLink, 
+  logDepartmentData, 
+  DEPARTMENTS, 
+  getTodayRow, 
+  getRowByDate,   // <--- Added 
+  getStoredLinks  // <--- Added
+} from '@/lib/sheets';
 
 export async function POST(req: Request) {
   try {
@@ -10,7 +19,6 @@ export async function POST(req: Request) {
         piecesReceived, okPieces, rejCount, itemsAdded 
     } = body;
 
-    // 1. Mandatory Check
     if (!deptId || !supervisor) {
       return NextResponse.json({ error: "Missing Name or ID" }, { status: 400 });
     }
@@ -18,17 +26,15 @@ export async function POST(req: Request) {
     const dept = DEPARTMENTS.find(d => d.id === deptId);
     if (!dept) return NextResponse.json({ error: "Invalid Dept" }, { status: 400 });
 
-    // 2. Prepare Time
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istDate = new Date(now.getTime() + istOffset);
     let timeStr = istDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
     
-    // Late Logic
+    // 7:30 PM LATE Logic
     const isLate = (istDate.getHours() > 19) || (istDate.getHours() === 19 && istDate.getMinutes() > 30);
     if (isLate) timeStr += " 🔴 LATE";
 
-    // 3. Update MAIN SHEET (Status Board)
     const dateStr = istDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
     let rowInfo = await getTodayRow(dateStr);
     if (!rowInfo) {
@@ -37,12 +43,10 @@ export async function POST(req: Request) {
     }
 
     if (rowInfo) {
-        // [Time, Name, Comment, Link]
         const dataToSave = [timeStr, supervisor, comment || "", sheetLink || "-"];
         await updateDepartmentData(rowInfo.rowIndex, dept.startCol, dataToSave);
     }
 
-    // 4. LOG TO SEPARATE DATABASE SHEET
     const rawData = { 
         supervisor, comment, sheetLink,
         prodCount, boxesUsed, totalPresent, totalAbsent, 
@@ -51,7 +55,6 @@ export async function POST(req: Request) {
     
     await logDepartmentData(deptId, rawData);
 
-    // 5. Update Config Link (only if valid)
     if (sheetLink && sheetLink.includes('docs.google.com')) {
         await updateStoredLink(deptId, sheetLink);
     }
@@ -68,16 +71,26 @@ export async function GET() {
   try {
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000;
+    
+    // 1. Get Dates (Today & Yesterday)
     const istDate = new Date(now.getTime() + istOffset);
     const dateStr = istDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
-    const rowInfo = await getTodayRow(dateStr);
-    const savedLinks = await import('@/lib/sheets').then(m => m.getStoredLinks());
+    const yesterdayDate = new Date(now.getTime() + istOffset - (24 * 60 * 60 * 1000));
+    const yesterdayStr = yesterdayDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    // 2. Fetch Data
+    const [rowInfo, yesterdayRow, savedLinks] = await Promise.all([
+        getTodayRow(dateStr),
+        getRowByDate(yesterdayStr),
+        getStoredLinks()
+    ]);
 
     const departments = DEPARTMENTS.map(dept => {
       let isCompleted = false;
       let data = { timestamp: '', supervisor: '', comment: '' };
 
+      // A. Check Today
       if (rowInfo && rowInfo.data) {
         const time = rowInfo.data[dept.startCol];
         if (time) {
@@ -90,10 +103,20 @@ export async function GET() {
         }
       }
 
+      // B. Check Yesterday (Late?)
+      let lateYesterday = false;
+      if (yesterdayRow && yesterdayRow.data) {
+          const yTime = yesterdayRow.data[dept.startCol];
+          if (yTime && yTime.includes('LATE')) {
+              lateYesterday = true;
+          }
+      }
+
       return {
         id: dept.id,
         name: dept.name,
         completed: isCompleted,
+        lateYesterday, // <--- Sent to Frontend
         ...data,
         savedLink: savedLinks[dept.id] || ''
       };
@@ -101,6 +124,7 @@ export async function GET() {
 
     return NextResponse.json({ departments });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
   }
 }

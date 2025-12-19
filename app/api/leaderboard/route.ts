@@ -1,92 +1,111 @@
 import { NextResponse } from 'next/server';
 import { getLeaderboardData, DEPARTMENTS } from '@/lib/sheets';
+import { parse, isSameWeek, isSameMonth, isValid } from 'date-fns';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
     const rawData = await getLeaderboardData();
-    
-    // Helper to parse time string "7:15:00 PM" -> Minutes from midnight
-    const parseTime = (timeStr: string) => {
-        if (!timeStr) return 9999; // No submission = infinite time
-        const cleanTime = timeStr.replace('🔴 LATE', '').trim();
-        const [time, modifier] = cleanTime.split(' ');
-        let [hours, minutes] = time.split(':').map(Number);
-        if (modifier === 'PM' && hours !== 12) hours += 12;
-        if (modifier === 'AM' && hours === 12) hours = 0;
-        return hours * 60 + minutes;
+
+    // 1. SETUP DATE REFERENCES (IST)
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const todayIST = new Date(now.getTime() + istOffset);
+
+    // Format for "Today" string matching
+    const todayStr = todayIST.toLocaleDateString('en-IN', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric' 
+    }); 
+
+    // Helper: Calculate points
+    const calculatePoints = (timeStr: string) => {
+        if (!timeStr) return 0;
+        const cleanTime = timeStr.replace('🔴 LATE', '').trim().toLowerCase();
+        const parts = cleanTime.split(' ');
+        const [hours, minutes] = parts[0].split(':').map(n => parseInt(n) || 0);
+        let h = hours;
+        if (parts[1]?.includes('pm') && h !== 12) h += 12;
+        if (parts[1]?.includes('am') && h === 12) h = 0;
+        const minutesOfDay = (h * 60) + minutes;
+        return Math.max(0, 2000 - minutesOfDay);
     };
 
+    // 2. INITIALIZE
     const scores: Record<string, any> = {};
-    const todayStr = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', year: 'numeric' }); // e.g. "17 Dec 2025" or however your sheet saves it (Adjust format to match your sheet)
-    
-    // Initialize Departments
     DEPARTMENTS.forEach(d => {
         if (d.id !== 'it_check') {
             scores[d.name] = { 
                 id: d.id, 
                 name: d.name, 
-                supervisor: 'Unknown', 
+                supervisor: 'Pending...', 
                 todayTime: null, 
-                points: 0,
-                weeklyScore: 0,
+                points: 0, 
+                weeklyScore: 0, 
                 monthlyScore: 0 
             };
         }
     });
 
-    // Process Rows
+    // 3. PROCESS DATA
     rawData.forEach(row => {
-        const rowDate = row[0]; // Date column
-        
+        const dateStr = row[0];
+        if (!dateStr) return;
+        const rowDate = parse(dateStr, 'd MMM yyyy', new Date());
+        if (!isValid(rowDate)) return;
+
         DEPARTMENTS.forEach(dept => {
             if (dept.id === 'it_check') return;
-
             const supervisor = row[dept.startCol + 1];
             const timestamp = row[dept.startCol + 2];
             
-            if (timestamp) {
-                // Determine Points based on time (Earlier is better)
-                // Deadline 19:30 (1170 mins). 
-                const minutes = parseTime(timestamp);
-                let dailyPoints = 0;
-                
-                if (minutes <= 1170) { // Before 7:30 PM
-                    // Max points 100 for very early, decreasing as it gets closer to 7:30
-                    dailyPoints = Math.max(0, 100 - Math.floor((minutes - 1080) / 2)); // Example scoring
-                    if (dailyPoints < 10) dailyPoints = 10; // Minimum points for being on time
-                }
+            if (timestamp && scores[dept.name]) {
+                const pts = calculatePoints(timestamp);
+                if (supervisor) scores[dept.name].supervisor = supervisor;
 
-                if (scores[dept.name]) {
-                    scores[dept.name].weeklyScore += dailyPoints;
-                    scores[dept.name].monthlyScore += dailyPoints;
-                    // Update latest known supervisor name
-                    if (supervisor) scores[dept.name].supervisor = supervisor;
-                    
-                    // If row is TODAY, set today's stats
-                    // Note: Date matching logic might need strict formatting check depending on your sheet
-                    // For now, we assume the last row is today or we check simply
-                    if (rowDate && rowDate.includes(new Date().getDate().toString())) {
-                         scores[dept.name].todayTime = timestamp;
-                         scores[dept.name].points = dailyPoints;
-                    }
+                // Weekly Accumulation (Current Week Only)
+                if (isSameWeek(rowDate, todayIST, { weekStartsOn: 1 })) {
+                    scores[dept.name].weeklyScore += Math.round(pts / 10);
+                }
+                // Monthly Accumulation (Current Month Only)
+                if (isSameMonth(rowDate, todayIST)) {
+                    scores[dept.name].monthlyScore += Math.round(pts / 10);
+                }
+                // Today's Score
+                if (dateStr.trim() === todayStr) {
+                     scores[dept.name].todayTime = timestamp;
+                     scores[dept.name].points = pts;
                 }
             }
         });
     });
 
-    // Convert to Array and Sort by Today's Points
-    const leaderboard = Object.values(scores).sort((a: any, b: any) => {
-        // Sort by Today's submission time (earlier is better)
-        // If no submission today, put at bottom
-        if (!a.todayTime) return 1;
-        if (!b.todayTime) return -1;
-        return parseTime(a.todayTime) - parseTime(b.todayTime);
+    // 4. DETERMINE CHAMPIONS
+    const values = Object.values(scores);
+    
+    // Weekly Champion (Highest Weekly Score > 0)
+    const weeklySorted = [...values].sort((a, b) => b.weeklyScore - a.weeklyScore);
+    const weeklyChamp = weeklySorted[0]?.weeklyScore > 0 ? weeklySorted[0].id : null;
+
+    // Monthly Champion (Highest Monthly Score > 0)
+    const monthlySorted = [...values].sort((a, b) => b.monthlyScore - a.monthlyScore);
+    const monthlyChamp = monthlySorted[0]?.monthlyScore > 0 ? monthlySorted[0].id : null;
+
+    // Daily Leaderboard (Sorted by Today's Points)
+    const leaderboard = values.sort((a: any, b: any) => b.points - a.points);
+
+    return NextResponse.json({ 
+        leaderboard,
+        champions: {
+            weekly: weeklyChamp,
+            monthly: monthlyChamp
+        }
     });
 
-    return NextResponse.json({ leaderboard });
   } catch (error) {
+    console.error("Leaderboard Error:", error);
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
