@@ -32,7 +32,7 @@ const DEFAULT_LINKS: Record<string, string> = {
       'basement': 'https://docs.google.com/spreadsheets/d/1SHR6Oanaz-h-iYZBRSwlqci4PHuVRxpLG92MEcGSB9E/edit?gid=1251109391#gid=1251109391',
       'quality': 'https://docs.google.com/spreadsheets/d/1xKqVTss5nyXxP41ff-eVdS5aUBqb6Su8reE8OdWre3Y/edit?gid=1008672530#gid=1008672530',
       'stock': 'https://docs.google.com/spreadsheets/d/12siBNbDOtmyAqIRH5cgc9APtw3rIEqBeZTzBRgiBrsg/edit?gid=580761467#gid=580761467',
-      'attendance': 'https://docs.google.com/spreadsheets/d/1O20bocLcEgeiUB9r8QdamIPweIbS1KOxpwk4ultJ8RU/edit?usp=sharing',
+      'attendance': 'https://docs.google.com/spreadsheets/d/1sKgjgiPVbUBy0Wv0i6PLUbM4G_8sBGljE7tDMLRycwQ/edit?usp=sharing',
       'it_check': '#' 
     };
 
