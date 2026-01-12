@@ -132,7 +132,7 @@ export async function logDepartmentData(deptId: string, data: DepartmentData) {
 // --- 📊 DASHBOARD METRICS ---
 export async function fetchDashboardMetrics() {
   const links = await getStoredLinks();
-  const targetDepts = ['floor', 'basement', 'quality']; 
+  const targetDepts = ['floor', 'basement', 'quality', 'attendance']; 
   const metricMap: Record<string, string[]> = {
     'Brands': ['brand', 'sku name', 'product name'],
     'RFS': ['total rfs', 'rfs'],
@@ -153,7 +153,19 @@ export async function fetchDashboardMetrics() {
     'QCRejectionPercent': ['total rejection percentage', 'rejection %'],
     'BoxesChecked': ['total boxes checked', 'boxes checked'],
     'EqualRejected': ['total rejected pieces (equal)', 'equal rejection'],
-    'EqualPacking': ['total equal for packing', 'ready for packing']
+    'EqualPacking': ['total equal for packing', 'ready for packing'],
+    'RollerPresent': ['roller present', 'rollers present'],
+    'RollerAbsent': ['roller absent', 'rollers absent'],
+    'FilterTotal': ['filter total', 'total filter staff'],
+    'FilterPresent': ['filter present', 'filters present'],
+    'FilterAbsent': ['filter absent', 'filters absent'],
+    'SupervisorPresent': ['supervisor present', 'supervisors present'],
+    'SupervisorAbsent': ['supervisor absent', 'supervisors absent'],
+    'CheckersPresent': ['checkers present', 'checker present'],
+    'CheckersAbsent': ['checkers absent', 'checker absent'],
+    'PackingManpower': ['packing manpower', 'packaging manpower', 'total packing staff'],
+    'PackingPresent': ['packing present', 'packaging present'],
+    'PackingAbsent': ['packing absent', 'packaging absent']
   };
 
   const aggregatedData: Record<string, number | string> = {};

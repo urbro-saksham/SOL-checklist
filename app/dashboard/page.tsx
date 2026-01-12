@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, BarChart3, Database, CheckCircle2, Package, Users, Activity, Box, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, BarChart3, Database, CheckCircle2, Package, Users, Activity, Box, AlertTriangle, ChevronDown, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import TechLoader from '@/components/TechLoader'; // Import new loader
 
@@ -10,6 +10,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('production');
+  const [showAttendanceDropdown, setShowAttendanceDropdown] = useState(false);
+  const [attendanceSection, setAttendanceSection] = useState<'basements' | 'firstFloor' | 'quality' | 'packaging' | null>(null);
 
   useEffect(() => {
     async function getData() {
@@ -26,6 +28,29 @@ export default function Dashboard() {
     }
     getData();
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!showAttendanceDropdown) return;
+    
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Check if click is outside both the button and the dropdown
+      if (!target.closest('.attendance-dropdown-container') && !target.closest('.attendance-dropdown-menu')) {
+        setShowAttendanceDropdown(false);
+      }
+    };
+    
+    // Small delay to prevent immediate close on button click
+    const timer = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+    
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showAttendanceDropdown]);
 
   // 🔥 GLOBAL LOADER
   if (loading) return <TechLoader />;
@@ -63,6 +88,23 @@ export default function Dashboard() {
 
         {/* --- NAVIGATION TABS --- */}
         <div className="flex gap-2 p-1 bg-slate-900/50 rounded-xl w-full md:w-fit border border-slate-700 backdrop-blur-md overflow-x-auto">
+            <button 
+                onClick={() => setShowAttendanceDropdown(!showAttendanceDropdown)}
+                className={`attendance-dropdown-container flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+                    activeTab === 'attendance' 
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50 scale-[1.02]' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+            >
+                <UserCheck size={16}/> 
+                {activeTab === 'attendance' && attendanceSection ? (
+                    attendanceSection === 'basements' ? 'Basements' :
+                    attendanceSection === 'firstFloor' ? 'First Floor' :
+                    attendanceSection === 'quality' ? 'Quality' :
+                    attendanceSection === 'packaging' ? 'Packaging' : 'Attendance'
+                ) : 'Attendance'}
+                <ChevronDown size={16} className={`transition-transform duration-200 ${showAttendanceDropdown ? 'rotate-180' : ''}`} />
+            </button>
             <TabButton 
                 label="Cone Production" 
                 icon={<Database size={16}/>} 
@@ -83,10 +125,200 @@ export default function Dashboard() {
             />
         </div>
 
+        {/* Attendance Dropdown Dialog - Floating Above Everything */}
+        {showAttendanceDropdown && (
+            <div className="attendance-dropdown-menu fixed top-[180px] left-4 md:left-8 bg-slate-800/95 backdrop-blur-xl border border-slate-700 rounded-xl shadow-2xl overflow-hidden z-[9999] min-w-[220px] animate-in fade-in slide-in-from-top-4 duration-200">
+                <button 
+                    onClick={() => {
+                        setActiveTab('attendance');
+                        setAttendanceSection('basements');
+                        setShowAttendanceDropdown(false);
+                    }}
+                    className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all border-b border-slate-700/50 ${
+                        activeTab === 'attendance' && attendanceSection === 'basements'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                    Basements
+                </button>
+                <button 
+                    onClick={() => {
+                        setActiveTab('attendance');
+                        setAttendanceSection('firstFloor');
+                        setShowAttendanceDropdown(false);
+                    }}
+                    className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all border-b border-slate-700/50 ${
+                        activeTab === 'attendance' && attendanceSection === 'firstFloor'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                    First Floor
+                </button>
+                <button
+                    onClick={() => {
+                        setActiveTab('attendance');
+                        setAttendanceSection('quality');
+                        setShowAttendanceDropdown(false);
+                    }}
+                    className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all border-b border-slate-700/50 ${
+                        activeTab === 'attendance' && attendanceSection === 'quality'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                    Quality
+                </button>
+                <button
+                    onClick={() => {
+                        setActiveTab('attendance');
+                        setAttendanceSection('packaging');
+                        setShowAttendanceDropdown(false);
+                    }}
+                    className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all ${
+                        activeTab === 'attendance' && attendanceSection === 'packaging'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                >
+                    Packaging
+                </button>
+            </div>
+        )}
+
         {/* --- MAIN CONTENT AREA --- */}
         <div className="bg-[#1e293b]/50 border border-slate-700 rounded-3xl backdrop-blur-xl shadow-2xl p-6 min-h-[500px]">
             
-            {/* 1. PRODUCTION TAB */}
+            {/* 1. ATTENDANCE TAB */}
+            {activeTab === 'attendance' && !attendanceSection && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex items-center justify-center min-h-[500px]">
+                    <div className="text-center space-y-4">
+                        <div className="bg-purple-500/10 p-6 rounded-full w-24 h-24 mx-auto flex items-center justify-center">
+                            <UserCheck size={48} className="text-purple-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-300">Select Attendance Department</h3>
+                        <p className="text-slate-500 text-sm max-w-md">Please select a department from the dropdown menu to view attendance details.</p>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'attendance' && attendanceSection && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                    
+                    {/* Basements Section */}
+                    {attendanceSection === 'basements' && (
+                        <>
+                            {/* Header */}
+                            <div className="flex items-center gap-3 border-b border-slate-700 pb-4">
+                                <div className="bg-purple-500/20 p-2 rounded-lg text-purple-400"><UserCheck size={24} /></div>
+                                <h2 className="text-2xl font-bold text-white">Attendance Report - Basements</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <TableCard title="Date & Department">
+                                    <MetricRow label="Date of Report" value={new Date().toLocaleDateString('en-IN')} />
+                                    <MetricRow label="Department" value="Basements" />
+                                </TableCard>
+                                <TableCard title="Roller Attendance">
+                                    <MetricRow label="Total Rollers" value={metrics?.Rollers || 0} unit="Staff" />
+                                    <MetricRow label="Roller Present" value={metrics?.RollerPresent || 0} unit="Staff" />
+                                    <MetricRow label="Roller Absent" value={metrics?.RollerAbsent || 0} unit="Staff" isBad />
+                                </TableCard>
+                                <TableCard title="Filter Attendance">
+                                    <MetricRow label="Filter Total" value={metrics?.FilterTotal || 0} unit="Staff" />
+                                    <MetricRow label="Filter Present" value={metrics?.FilterPresent || 0} unit="Staff" />
+                                    <MetricRow label="Filter Absent" value={metrics?.FilterAbsent || 0} unit="Staff" isBad />
+                                </TableCard>
+                                <TableCard title="Supervisor Attendance">
+                                    <MetricRow label="Supervisor Present" value={metrics?.SupervisorPresent || 0} unit="Staff" />
+                                    <MetricRow label="Supervisor Absent" value={metrics?.SupervisorAbsent || 0} unit="Staff" isBad />
+                                </TableCard>
+                            </div>
+                        </>
+                    )}
+
+                    {/* First Floor Section */}
+                    {attendanceSection === 'firstFloor' && (
+                        <>
+                            {/* Header */}
+                            <div className="flex items-center gap-3 border-b border-slate-700 pb-4">
+                                <div className="bg-purple-500/20 p-2 rounded-lg text-purple-400"><UserCheck size={24} /></div>
+                                <h2 className="text-2xl font-bold text-white">Attendance Report - First Floor</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <TableCard title="Date & Department">
+                                    <MetricRow label="Date of Report" value={new Date().toLocaleDateString('en-IN')} />
+                                    <MetricRow label="Department" value="Basement" />
+                                </TableCard>
+                                <TableCard title="Roller Attendance">
+                                    <MetricRow label="Total Rollers" value={metrics?.Rollers || 0} unit="Staff" />
+                                    <MetricRow label="Roller Present" value={metrics?.RollerPresent || 0} unit="Staff" />
+                                    <MetricRow label="Roller Absent" value={metrics?.RollerAbsent || 0} unit="Staff" isBad />
+                                </TableCard>
+                                <TableCard title="Filter Attendance">
+                                    <MetricRow label="Filter Total" value={metrics?.FilterTotal || 0} unit="Staff" />
+                                    <MetricRow label="Filter Present" value={metrics?.FilterPresent || 0} unit="Staff" />
+                                    <MetricRow label="Filter Absent" value={metrics?.FilterAbsent || 0} unit="Staff" isBad />
+                                </TableCard>
+                                <TableCard title="Supervisor Attendance">
+                                    <MetricRow label="Supervisor Present" value={metrics?.SupervisorPresent || 0} unit="Staff" />
+                                    <MetricRow label="Supervisor Absent" value={metrics?.SupervisorAbsent || 0} unit="Staff" isBad />
+                                </TableCard>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Quality Department Section */}
+                    {attendanceSection === 'quality' && (
+                        <>
+                            {/* Header */}
+                            <div className="flex items-center gap-3 border-b border-slate-700 pb-4">
+                                <div className="bg-purple-500/20 p-2 rounded-lg text-purple-400"><UserCheck size={24} /></div>
+                                <h2 className="text-2xl font-bold text-white">Attendance Report - Quality Department</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <TableCard title="Date & Department">
+                                    <MetricRow label="Date of Report" value={new Date().toLocaleDateString('en-IN')} />
+                                    <MetricRow label="Department" value="Quality Department" />
+                                </TableCard>
+                                <TableCard title="Checker Attendance">
+                                    <MetricRow label="Total Checkers" value={metrics?.Checkers || 0} unit="Staff" />
+                                    <MetricRow label="Total Present" value={metrics?.CheckersPresent || 0} unit="Staff" />
+                                    <MetricRow label="Total Absent" value={metrics?.CheckersAbsent || 0} unit="Staff" isBad />
+                                </TableCard>
+                            </div>
+                        </>
+                    )}
+
+                    {/* Packaging Department Section */}
+                    {attendanceSection === 'packaging' && (
+                        <>
+                            {/* Header */}
+                            <div className="flex items-center gap-3 border-b border-slate-700 pb-4">
+                                <div className="bg-purple-500/20 p-2 rounded-lg text-purple-400"><UserCheck size={24} /></div>
+                                <h2 className="text-2xl font-bold text-white">Attendance Report - Packing Department</h2>
+                            </div>
+
+                            <div className="grid md:grid-cols-2 gap-6">
+                                <TableCard title="Date & Department">
+                                    <MetricRow label="Date of Report" value={new Date().toLocaleDateString('en-IN')} />
+                                    <MetricRow label="Department" value="Packing Department" />
+                                </TableCard>
+                                <TableCard title="Manpower Attendance">
+                                    <MetricRow label="Total Manpower" value={metrics?.PackingManpower || 0} unit="Staff" />
+                                    <MetricRow label="Total Present" value={metrics?.PackingPresent || 0} unit="Staff" />
+                                    <MetricRow label="Total Absent" value={metrics?.PackingAbsent || 0} unit="Staff" isBad />
+                                </TableCard>
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* 2. PRODUCTION TAB */}
             {activeTab === 'production' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                     
@@ -122,7 +354,7 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* 2. QUALITY CHECK TAB */}
+            {/* 3. QUALITY CHECK TAB */}
             {activeTab === 'quality' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                     
@@ -167,7 +399,7 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* 3. EQUAL TEAM TAB */}
+            {/* 4. EQUAL TEAM TAB */}
             {activeTab === 'equal' && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                     
