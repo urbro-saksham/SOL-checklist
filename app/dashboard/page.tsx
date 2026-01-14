@@ -9,7 +9,7 @@ import html2canvas from 'html2canvas';
 
 export default function Dashboard() {
 
-    const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('attendance');
   const [showAttendanceDropdown, setShowAttendanceDropdown] = useState(false);
   const [attendanceSection, setAttendanceSection] = useState<'basements' | 'firstFloor' | 'quality' | 'packaging' | null>(null);
@@ -193,16 +193,16 @@ export default function Dashboard() {
       ]);
       yPos += 32;
       
-      // Filter Attendance
+      // Gummer Attendance
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(37, 99, 235);
-      pdf.text('Filter Attendance', 20, yPos);
+      pdf.text('Gummer Attendance', 20, yPos);
       yPos += 8;
       
       drawTable(pdf, yPos, [
-        ['Filter Total', (attendanceData?.filterTotal || 0).toString() + ' Staff'],
-        ['Filter Present', (attendanceData?.filterPresent || 0).toString() + ' Staff'],
-        ['Filter Absent', (attendanceData?.filterAbsent || 0).toString() + ' Staff']
+        ['Gummer Total', (attendanceData?.basementfilterTotal || 0).toString() + ' Staff'],
+        ['Gummer Present', (attendanceData?.basementfilterPresent || 0).toString() + ' Staff'],
+        ['Gummer Absent', (attendanceData?.basementfilterAbsent || 0).toString() + ' Staff']
       ]);
       yPos += 32;
       
@@ -231,16 +231,16 @@ export default function Dashboard() {
       ]);
       yPos += 32;
       
-      // Filter Attendance
+      // Gummer Attendance
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(37, 99, 235);
-      pdf.text('Filter Attendance', 20, yPos);
+      pdf.text('Gummer Attendance', 20, yPos);
       yPos += 8;
       
       drawTable(pdf, yPos, [
-        ['Filter Total', (attendanceData?.filterTotal || 0).toString() + ' Staff'],
-        ['Filter Present', (attendanceData?.filterPresent || 0).toString() + ' Staff'],
-        ['Filter Absent', (attendanceData?.filterAbsent || 0).toString() + ' Staff']
+        ['Gummer Total', (attendanceData?.firstFloorfilterTotal || 0).toString() + ' Staff'],
+        ['Gummer Present', (attendanceData?.firstFloorfilterPresent || 0).toString() + ' Staff'],
+        ['Gummer Absent', (attendanceData?.firstFloorfilterAbsent || 0).toString() + ' Staff']
       ]);
       yPos += 32;
       
@@ -502,10 +502,10 @@ export default function Dashboard() {
                                     <MetricRow label="Roller Present" value={attendanceData?.basementRollersPresent || 0} unit="Staff" />
                                     <MetricRow label="Roller Absent" value={attendanceData?.basementRollersAbsent || 0} unit="Staff" isBad />
                                 </TableCard>
-                                <TableCard title="Filter Attendance">
-                                    <MetricRow label="Filter Total" value={attendanceData?.filterTotal || 0} unit="Staff" />
-                                    <MetricRow label="Filter Present" value={attendanceData?.filterPresent || 0} unit="Staff" />
-                                    <MetricRow label="Filter Absent" value={attendanceData?.filterAbsent || 0} unit="Staff" isBad />
+                                <TableCard title="Gummer Attendance">
+                                    <MetricRow label="Gummer Total" value={attendanceData?.basementfilterTotal || 0} unit="Staff" />
+                                    <MetricRow label="Gummer Present" value={attendanceData?.basementfilterPresent || 0} unit="Staff" />
+                                    <MetricRow label="Gummer Absent" value={attendanceData?.basementfilterAbsent || 0} unit="Staff" isBad />
                                 </TableCard>
                                 <TableCard title="Supervisor Attendance">
                                     <MetricRow label="Supervisor Present" value={attendanceData?.basementSupervisorPresent || 0} unit="Staff" />
@@ -544,10 +544,10 @@ export default function Dashboard() {
                                     <MetricRow label="Roller Present" value={attendanceData?.firstFloorRollersPresent || 0} unit="Staff" />
                                     <MetricRow label="Roller Absent" value={attendanceData?.firstFloorRollersAbsent || 0} unit="Staff" isBad />
                                 </TableCard>
-                                <TableCard title="Filter Attendance">
-                                    <MetricRow label="Filter Total" value={attendanceData?.filterTotal || 0} unit="Staff" />
-                                    <MetricRow label="Filter Present" value={attendanceData?.filterPresent || 0} unit="Staff" />
-                                    <MetricRow label="Filter Absent" value={attendanceData?.filterAbsent || 0} unit="Staff" isBad />
+                                <TableCard title="Gummer Attendance">
+                                    <MetricRow label="Gummer Total" value={attendanceData?.firstFloorfilterTotal || 0} unit="Staff" />
+                                    <MetricRow label="Gummer Present" value={attendanceData?.firstFloorfilterPresent || 0} unit="Staff" />
+                                    <MetricRow label="Gummer Absent" value={attendanceData?.firstFloorfilterAbsent || 0} unit="Staff" isBad />
                                 </TableCard>
                                 <TableCard title="Supervisor Attendance">
                                     <MetricRow label="Supervisor Present" value={attendanceData?.firstFloorSupervisorPresent || 0} unit="Staff" />

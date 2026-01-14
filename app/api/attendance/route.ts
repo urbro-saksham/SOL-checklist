@@ -248,9 +248,10 @@ export async function GET() {
     console.log('FILTERING RULES (ONLY: Location + Designation + Date Status):');
     console.log('  🏢 Basement Rollers: BASEMENT location + ROLLER designation');
     console.log('  👔 Basement Supervisors: BASEMENT location + SUPERVISOR designation');
+    console.log('  🔧 Basement Gummers: BASEMENT location + GUMMER designation');
     console.log('  🏢 First Floor Rollers: (1ST FLOOR or GROUND FLOOR) location + ROLLER designation');
     console.log('  👔 First Floor Supervisors: (1ST FLOOR or GROUND FLOOR) location + SUPERVISOR designation');
-    console.log('  🔧 Filter: Any location + FILTER designation (or similar)');
+    console.log('  🔧 First Floor Gummers: (1ST FLOOR or GROUND FLOOR) location + GUMMER designation');
     console.log('  ✅ Quality: Any location + CHECKER designation');
     console.log('  📦 Packing: Any location + Packing related designation');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
@@ -271,10 +272,14 @@ export async function GET() {
       firstFloorSupervisorTotal: 0,
       firstFloorSupervisorPresent: 0,
       firstFloorSupervisorAbsent: 0,
+
+      basementfilterTotal: 0,
+      basementfilterPresent: 0,
+      basementfilterAbsent: 0,
       
-      filterTotal: 0,
-      filterPresent: 0,
-      filterAbsent: 0,
+      firstFloorfilterTotal: 0,
+      firstFloorfilterPresent: 0,
+      firstFloorfilterAbsent: 0,
       
       supervisorTotal: 0,
       supervisorPresent: 0,
@@ -299,6 +304,8 @@ export async function GET() {
       basementSupervisor: [] as string[],
       firstFloor: [] as string[],
       firstFloorSupervisor: [] as string[],
+      firstFloorFilter: [] as string[],
+      basementFilter: [] as string[],
       filter: [] as string[],
       management: [] as string[],
       quality: [] as string[],
@@ -352,6 +359,19 @@ export async function GET() {
           counts.basementRollersAbsent++;
         }
       }
+
+      // ✅ FIRST FLOOR SECTION - ONLY Location + Designation + Date
+      // First Floor Rollers: (1ST FLOOR OR GROUND FLOOR) location + ROLLER designation
+      if ((loc === '1ST FLOOR') && designation === 'ROLLER') {
+        counts.firstFloorRollers++;
+        matchedEmployees.firstFloor.push(`${empName} (${status})`);
+        if (isPresent) {
+          counts.firstFloorRollersPresent++;
+        }
+        if (isAbsent) {
+          counts.firstFloorRollersAbsent++;
+        }
+      }
       
       // Basement Supervisors: BASEMENT location + SUPERVISOR designation
       if (loc === 'BASEMENT' && designation === 'SUPERVISOR') {
@@ -365,21 +385,8 @@ export async function GET() {
         }
       }
       
-      // ✅ FIRST FLOOR SECTION - ONLY Location + Designation + Date
-      // First Floor Rollers: (1ST FLOOR OR GROUND FLOOR) location + ROLLER designation
-      if ((loc === '1ST FLOOR' || loc === 'GROUND FLOOR') && designation === 'ROLLER') {
-        counts.firstFloorRollers++;
-        matchedEmployees.firstFloor.push(`${empName} (${status})`);
-        if (isPresent) {
-          counts.firstFloorRollersPresent++;
-        }
-        if (isAbsent) {
-          counts.firstFloorRollersAbsent++;
-        }
-      }
-      
       // First Floor Supervisors: (1ST FLOOR OR GROUND FLOOR) location + SUPERVISOR designation
-      if ((loc === '1ST FLOOR' || loc === 'GROUND FLOOR') && designation === 'SUPERVISOR') {
+      if ((loc === '1ST FLOOR') && designation === 'SUPERVISOR') {
         counts.firstFloorSupervisorTotal++;
         matchedEmployees.firstFloorSupervisor.push(`${empName} (${status})`);
         if (isPresent) {
@@ -389,14 +396,27 @@ export async function GET() {
           counts.firstFloorSupervisorAbsent++;
         }
       }
-      
-      // ✅ FILTER SECTION - Look for FILTER-related designations (not department)
-      // Check if designation contains filter-related terms
-      if (designation.includes('FILT') || dept.includes('FILT')) {
-        counts.filterTotal++;
-        matchedEmployees.filter.push(`${empName} (${status})`);
-        if (isPresent) counts.filterPresent++;
-        if (isAbsent) counts.filterAbsent++;
+
+      if ((loc === 'BASEMENT') && designation === 'GUMMER') {
+        counts.basementfilterTotal++;
+        matchedEmployees.basementFilter.push(`${empName} (${status})`);
+        if (isPresent) {
+          counts.basementfilterPresent++;
+        }
+        if (isAbsent) {
+          counts.basementfilterAbsent++;
+        }
+      }
+
+      if ((loc === '1ST FLOOR') && designation === 'GUMMER') {
+        counts.firstFloorfilterTotal++;
+        matchedEmployees.firstFloorFilter.push(`${empName} (${status})`);
+        if (isPresent) {
+          counts.firstFloorfilterPresent++;
+        }
+        if (isAbsent) {
+          counts.firstFloorfilterAbsent++;
+        }
       }
       
       // General Supervisors (for backward compatibility - count all supervisors not in specific floors)
@@ -470,11 +490,17 @@ export async function GET() {
       console.log('     Sample:', matchedEmployees.firstFloorSupervisor.join(', '));
     }
     
-    console.log('\n🔧 FILTER SECTION:');
-    console.log('  → Filter Staff (Designation/Dept contains FILTER):', matchedEmployees.filter.length, 'employees');
-    console.log('     Total:', counts.filterTotal, '| Present:', counts.filterPresent, '| Absent:', counts.filterAbsent);
-    if (matchedEmployees.filter.length > 0) {
-      console.log('     Sample:', matchedEmployees.filter.slice(0, 5).join(', '));
+    console.log('\n🔧 GUMMER SECTION:');
+    console.log('  → Basement Gummers (Location: BASEMENT + Designation: GUMMER):', matchedEmployees.basementFilter.length, 'employees');
+    console.log('     Total:', counts.basementfilterTotal, '| Present:', counts.basementfilterPresent, '| Absent:', counts.basementfilterAbsent);
+    if (matchedEmployees.basementFilter.length > 0) {
+      console.log('     Sample:', matchedEmployees.basementFilter.slice(0, 5).join(', '));
+    }
+    
+    console.log('  → First Floor Gummers (Location: 1ST FLOOR + Designation: GUMMER):', matchedEmployees.firstFloorFilter.length, 'employees');
+    console.log('     Total:', counts.firstFloorfilterTotal, '| Present:', counts.firstFloorfilterPresent, '| Absent:', counts.firstFloorfilterAbsent);
+    if (matchedEmployees.firstFloorFilter.length > 0) {
+      console.log('     Sample:', matchedEmployees.firstFloorFilter.slice(0, 5).join(', '));
     }
     
     console.log('\n👔 ALL SUPERVISORS SECTION:');
@@ -506,12 +532,12 @@ export async function GET() {
     console.log('📍 BASEMENT SECTION (Location = BASEMENT):');
     console.log('   • Rollers Present:', counts.basementRollersPresent, '/', counts.basementRollers, 'total');
     console.log('   • Supervisors Present:', counts.basementSupervisorPresent, '/', counts.basementSupervisorTotal, 'total');
-    console.log('   • Filter Present:', counts.filterPresent, '/', counts.filterTotal, 'total (shared across floors)');
+    console.log('   • Gummers Present:', counts.basementfilterPresent, '/', counts.basementfilterTotal, 'total');
     console.log('');
     console.log('📍 FIRST FLOOR SECTION (Location = 1ST FLOOR or GROUND FLOOR):');
     console.log('   • Rollers Present:', counts.firstFloorRollersPresent, '/', counts.firstFloorRollers, 'total');
     console.log('   • Supervisors Present:', counts.firstFloorSupervisorPresent, '/', counts.firstFloorSupervisorTotal, 'total');
-    console.log('   • Filter Present:', counts.filterPresent, '/', counts.filterTotal, 'total (shared across floors)');
+    console.log('   • Gummers Present:', counts.firstFloorfilterPresent, '/', counts.firstFloorfilterTotal, 'total');
     console.log('');
     console.log('📍 QUALITY SECTION:');
     console.log('   • Checkers Present:', counts.qualityPresent, '/', counts.qualityTotal, 'total');
