@@ -8,8 +8,7 @@ export const dynamic = 'force-dynamic';
 
 // const INDEX_URL = "https://docs.google.com/spreadsheets/d/1ec9iB8u1rLEZuL3G0nIT6mkUYWI1vSbER8GHIJEWTDU/export?format=csv";
 
-const INDEX_URL =
-  "https://docs.google.com/spreadsheets/d/1nCeM9jtXEfm7fHsHnLVJugxmJU-TirWlAcDPFzEawkM/export?format=csv";
+const INDEX_URL = "https://docs.google.com/spreadsheets/d/1nCeM9jtXEfm7fHsHnLVJugxmJU-TirWlAcDPFzEawkM/export?format=csv";
 
 
 
@@ -73,24 +72,84 @@ async function getLatestFileId() {
 
 async function parseAttendanceFromBuffer(buffer: ArrayBuffer | Buffer) {
   console.log('\n📖 Step 3: Reading Excel workbook...');
-  const workbook = XLSX.read(buffer);
+  const workbook = XLSX.read(buffer, { 
+    cellDates: true,
+    cellNF: false,
+    cellText: false,
+    dense: false
+  });
   console.log('Available sheets:', workbook.SheetNames);
   
   const sheet = workbook.Sheets[workbook.SheetNames[0]];
   
   // Check sheet range to see if data exists
   const sheetRange = sheet['!ref'];
-  console.log('Sheet range:', sheetRange);
+  console.log('📊 Sheet range from !ref:', sheetRange);
+  
+  // CRITICAL DEBUG: Check all cells in the sheet to find the actual data range
+  console.log('\n🔍 CRITICAL DEBUG: Analyzing sheet structure...');
+  const sheetKeys = Object.keys(sheet).filter(key => !key.startsWith('!'));
+  console.log('Total cells found in sheet:', sheetKeys.length);
+  
+  // Find the maximum column and row by scanning all cells
+  let maxRow = 0;
+  let maxCol = 0;
+  const cellMap = new Map<string, any>();
+  
+  sheetKeys.forEach(key => {
+    const cell = XLSX.utils.decode_cell(key);
+    maxRow = Math.max(maxRow, cell.r);
+    maxCol = Math.max(maxCol, cell.c);
+    cellMap.set(key, sheet[key]);
+  });
+  
+  console.log(`📊 Actual data range (from cell scan): Row 0-${maxRow}, Column 0-${maxCol}`);
+  console.log(`📊 Sheet !ref range: ${sheetRange}`);
+  
+  if (sheetRange) {
+    const refRange = XLSX.utils.decode_range(sheetRange);
+    console.log(`📊 !ref decoded: Row ${refRange.s.r}-${refRange.e.r}, Column ${refRange.s.c}-${refRange.e.c}`);
+    console.log(`⚠️  Range mismatch check: maxRow=${maxRow} vs refRange.e.r=${refRange.e.r}, maxCol=${maxCol} vs refRange.e.c=${refRange.e.c}`);
+    
+    if (maxCol > refRange.e.c) {
+      console.log(`⚠️  WARNING: Actual columns (${maxCol}) exceed !ref range (${refRange.e.c})! This is likely the issue.`);
+      console.log(`   The sheet range doesn't include all columns. We'll read directly from cells.`);
+    }
+  }
   
   // First, read without headers to find the header row
   console.log('\n🔍 Searching for header row containing "EmployeeCode"...');
-  const rawData = XLSX.utils.sheet_to_json(sheet, {
-    header: 1, // Use array of arrays instead of objects
-    defval: "",
-    raw: false
-  }) as any[][];
+  
+  // Read ALL rows up to maxRow, scanning all columns
+  const rawData: any[][] = [];
+  for (let row = 0; row <= Math.min(maxRow, 1000); row++) {
+    const rowData: any[] = [];
+    for (let col = 0; col <= maxCol; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = sheet[cellAddress];
+      if (cell) {
+        // Get the value, handling different cell types
+        let value: any = cell.v;
+        if (cell.t === 'd' && cell.v instanceof Date) {
+          value = cell.v;
+        } else if (cell.t === 'n' && cell.w) {
+          // If there's a formatted text, prefer it for dates
+          value = cell.w;
+        } else if (cell.t === 'n') {
+          value = cell.v;
+        } else {
+          value = cell.v || cell.w || '';
+        }
+        rowData[col] = value;
+      } else {
+        rowData[col] = '';
+      }
+    }
+    rawData.push(rowData);
+  }
   
   console.log('Total raw rows found:', rawData.length);
+  console.log('Max columns found:', maxCol + 1);
   
   // Find the row index that contains "EmployeeCode"
   let headerRowIndex = -1;
@@ -99,7 +158,9 @@ async function parseAttendanceFromBuffer(buffer: ArrayBuffer | Buffer) {
     const rowString = JSON.stringify(row).toUpperCase();
     if (rowString.includes('EMPLOYEECODE')) {
       headerRowIndex = i;
-      console.log(`✅ Found header row at index ${i}:`, row);
+      console.log(`✅ Found header row at index ${i}`);
+      console.log(`   Header row has ${row.length} columns`);
+      console.log(`   First 10 header values:`, row.slice(0, 10));
       break;
     }
   }
@@ -113,14 +174,80 @@ async function parseAttendanceFromBuffer(buffer: ArrayBuffer | Buffer) {
   // Now parse again starting from the header row
   console.log(`\n📋 Parsing data starting from row ${headerRowIndex + 1}...`);
   
-  // Adjust the sheet range to start from the header row
-  const range = XLSX.utils.decode_range(sheet['!ref'] || 'A1');
-  range.s.r = headerRowIndex; // Start from header row
+  // Get the raw header row to see actual column names
+  const rawHeaderRow = rawData[headerRowIndex];
+  console.log('\n📋 Raw header row analysis:');
+  console.log('   Total columns:', rawHeaderRow.length);
+  console.log('   Non-empty columns:', rawHeaderRow.filter((c: any) => c !== null && c !== undefined && c !== '').length);
+  console.log('   First 20 columns:', rawHeaderRow.slice(0, 20));
+  console.log('   Last 20 columns:', rawHeaderRow.slice(-20));
   
-  const jsonData = XLSX.utils.sheet_to_json(sheet, {
-    range: headerRowIndex,
-    defval: "",
-    raw: false
+  console.log('\n📋 Raw header row types (first 30):');
+  rawHeaderRow.slice(0, 30).forEach((cell: any, idx: number) => {
+    console.log(`  Col ${idx}: value="${cell}", type=${typeof cell}, isDate=${cell instanceof Date}, stringified="${String(cell)}"`);
+  });
+  
+  // Normalize header row - convert all headers to strings, handling dates and numbers
+  const normalizedHeaders = rawHeaderRow.map((cell: any, idx: number) => {
+    if (cell === null || cell === undefined || cell === '') {
+      return `Column${idx + 1}`; // Fallback for empty headers
+    }
+    
+    // Handle Date objects
+    if (cell instanceof Date) {
+      const year = cell.getFullYear();
+      const month = String(cell.getMonth() + 1).padStart(2, '0');
+      const day = String(cell.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+    
+    // Handle Excel date serial numbers (if Excel converted date headers to numbers)
+    if (typeof cell === 'number') {
+      // Check if it's a reasonable date serial (Excel dates start from 1 = Jan 1, 1900)
+      // Dates in 2020s would be around 44000-45000 range
+      if (cell > 1 && cell < 100000) {
+        try {
+          // Excel epoch: Dec 30, 1899
+          const excelEpoch = new Date(1899, 11, 30);
+          const date = new Date(excelEpoch.getTime() + cell * 24 * 60 * 60 * 1000);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        } catch (e) {
+          // If conversion fails, just use the number as string
+          return String(cell);
+        }
+      }
+      return String(cell);
+    }
+    
+    // Handle strings - trim whitespace
+    return String(cell).trim();
+  });
+  
+  console.log('\n📋 Normalized headers analysis:');
+  console.log('   Total normalized headers:', normalizedHeaders.length);
+  console.log('   First 10 headers:', normalizedHeaders.slice(0, 10));
+  console.log('   Last 10 headers:', normalizedHeaders.slice(-10));
+  console.log('   Headers that look like dates:', normalizedHeaders.filter((h: string) => {
+    const trimmed = h.trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(trimmed) || 
+           /^\d{2}-\d{2}-\d{4}$/.test(trimmed) ||
+           (trimmed.includes('-') && /\d/.test(trimmed));
+  }));
+  
+  // Parse data rows (skip header row)
+  const dataRows = rawData.slice(headerRowIndex + 1);
+  console.log('\n📊 Data rows count:', dataRows.length);
+  
+  // Convert data rows to objects using normalized headers
+  const jsonData = dataRows.map((row: any[]) => {
+    const rowObj: any = {};
+    normalizedHeaders.forEach((header: string, idx: number) => {
+      rowObj[header] = row[idx] !== undefined && row[idx] !== null ? row[idx] : '';
+    });
+    return rowObj;
   });
   
   console.log('\n✅ Sheet converted to JSON');
@@ -129,7 +256,9 @@ async function parseAttendanceFromBuffer(buffer: ArrayBuffer | Buffer) {
   if (jsonData.length > 0) {
     const firstRow = jsonData[0] as Record<string, any>;
     console.log('\n📋 First data row keys:', Object.keys(firstRow));
-    console.log('📋 First data row values:', Object.values(firstRow));
+    console.log('📋 First data row keys count:', Object.keys(firstRow).length);
+    console.log('📋 First 20 keys:', Object.keys(firstRow).slice(0, 20));
+    console.log('📋 Last 20 keys:', Object.keys(firstRow).slice(-20));
     console.log('\n📋 First 3 data rows (full):');
     jsonData.slice(0, 3).forEach((row, i) => {
       console.log(`  Row ${i + 1}:`, JSON.stringify(row, null, 2));
@@ -265,16 +394,69 @@ export async function GET() {
     console.log('\n📊 Column Analysis:');
     console.log('Total columns:', allColumns.length);
     console.log('All column names:', allColumns);
+    console.log('All column names (with types and values):');
+    allColumns.forEach((col, idx) => {
+      const value = firstRow[col];
+      console.log(`  ${idx + 1}. "${col}" (type: ${typeof col}, value type: ${typeof value}, sample value: ${JSON.stringify(value)})`);
+    });
     
     // Standard columns (non-date columns)
     const standardCols = ['EmployeeCode', 'EmployeeName', 'DepartmentName', 'Designation', 'Location', 'Shift'];
     console.log('Standard columns to filter:', standardCols);
+  
+    // Helper function to check if a column name looks like a date
+    function isDateColumn(colName: string): boolean {
+      if (!colName) return false;
+      
+      // Trim whitespace and convert to string
+      const trimmed = String(colName).trim();
+      
+      // Check if it's a standard column (case-insensitive)
+      const isStandard = standardCols.some(sc => sc.toLowerCase() === trimmed.toLowerCase());
+      if (isStandard) return false;
+      
+      // Check for date patterns:
+      // 1. YYYY-MM-DD format (e.g., 2026-01-01)
+      // 2. DD-MM-YYYY format (e.g., 01-01-2026)
+      // 3. MM/DD/YYYY or DD/MM/YYYY format
+      // 4. Contains dash or slash separators with numbers
+      // 5. Excel date serial numbers (if Excel converted dates to numbers)
+      
+      // Exact date format patterns
+      const datePatterns = [
+        /^\d{4}-\d{2}-\d{2}$/,           // YYYY-MM-DD
+        /^\d{2}-\d{2}-\d{4}$/,           // DD-MM-YYYY
+        /^\d{4}\/\d{2}\/\d{2}$/,         // YYYY/MM/DD
+        /^\d{2}\/\d{2}\/\d{4}$/,         // MM/DD/YYYY or DD/MM/YYYY
+        /^\d{1,2}-\d{1,2}-\d{4}$/,       // D-M-YYYY or DD-MM-YYYY (flexible)
+        /^\d{4}-\d{1,2}-\d{1,2}$/,       // YYYY-M-D or YYYY-MM-DD (flexible)
+      ];
+      
+      // Check exact patterns first
+      if (datePatterns.some(pattern => pattern.test(trimmed))) {
+        return true;
+      }
+      
+      // Check if it contains date-like separators with numbers
+      // Pattern: has dashes or slashes AND contains numbers
+      if ((trimmed.includes('-') || trimmed.includes('/')) && /\d/.test(trimmed)) {
+        // More specific check: should have at least 2 numbers separated by dash/slash
+        const parts = trimmed.split(/[-\/]/);
+        if (parts.length >= 2 && parts.every(p => /\d/.test(p))) {
+          return true;
+        }
+      }
+      
+      // Check for Excel date serial numbers (if Excel converted date headers)
+      // Excel dates are typically > 1 (Jan 1, 1900 = 1)
+      // But this is unlikely for headers, so we'll skip this check
+      
+      return false;
+    }
     
     // Find date columns - anything that's not a standard column and contains date-like patterns
     const dateColumns = allColumns.filter(col => {
-      const isStandard = standardCols.includes(col);
-      const hasDatePattern = col.includes('-') || col.includes('/') || /^\d{2}-\d{2}-\d{4}$/.test(col) || /^\d{4}-\d{2}-\d{2}$/.test(col);
-      return !isStandard && hasDatePattern;
+      return isDateColumn(col);
     });
     
     console.log('\n📅 Date Columns Analysis:');
@@ -285,13 +467,41 @@ export async function GET() {
     const nonDateNonStandard = allColumns.filter(col => !standardCols.includes(col) && !dateColumns.includes(col));
     if (nonDateNonStandard.length > 0) {
       console.log('⚠️ Columns ignored (not standard, not date-like):', nonDateNonStandard);
+      console.log('⚠️ Detailed analysis of ignored columns:');
+      nonDateNonStandard.forEach(col => {
+        const trimmed = String(col).trim();
+        const hasDash = trimmed.includes('-');
+        const hasSlash = trimmed.includes('/');
+        const hasNumbers = /\d/.test(trimmed);
+        console.log(`  - "${col}" (trimmed: "${trimmed}")`);
+        console.log(`    Has dash: ${hasDash}, Has slash: ${hasSlash}, Has numbers: ${hasNumbers}`);
+        console.log(`    Matches YYYY-MM-DD: ${/^\d{4}-\d{2}-\d{2}$/.test(trimmed)}`);
+        console.log(`    Matches DD-MM-YYYY: ${/^\d{2}-\d{2}-\d{4}$/.test(trimmed)}`);
+      });
     }
     
     if (dateColumns.length === 0) {
       console.error('❌ No date columns found!');
       console.error('All columns detected:', allColumns);
       console.error('Standard columns filter:', standardCols);
-      console.error('Columns that were filtered out:', allColumns.filter(col => !standardCols.includes(col)));
+      const potentialDateCols = allColumns.filter(col => !standardCols.includes(col));
+      console.error('Columns that are NOT standard columns (potential dates):', potentialDateCols);
+      
+      // Show detailed analysis of potential date columns
+      console.error('\n🔍 Detailed analysis of potential date columns:');
+      potentialDateCols.forEach(col => {
+        const trimmed = String(col).trim();
+        console.error(`  Column: "${col}"`);
+        console.error(`    Trimmed: "${trimmed}"`);
+        console.error(`    Type: ${typeof col}`);
+        console.error(`    Length: ${trimmed.length}`);
+        console.error(`    Contains dash: ${trimmed.includes('-')}`);
+        console.error(`    Contains slash: ${trimmed.includes('/')}`);
+        console.error(`    Contains numbers: ${/\d/.test(trimmed)}`);
+        console.error(`    Matches YYYY-MM-DD: ${/^\d{4}-\d{2}-\d{2}$/.test(trimmed)}`);
+        console.error(`    Matches DD-MM-YYYY: ${/^\d{2}-\d{2}-\d{4}$/.test(trimmed)}`);
+        console.error(`    Sample value from first row: ${JSON.stringify(firstRow[col])}`);
+      });
       
       // Show raw first row
       console.error('\n🔍 Raw first row data:');
