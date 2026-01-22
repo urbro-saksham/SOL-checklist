@@ -20,6 +20,7 @@ export default function Dashboard() {
   const contentRef = useRef<HTMLDivElement>(null);
   const attendanceButtonRef = useRef<HTMLButtonElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const[filedate, setFileDate] = useState('')
 
   useEffect(() => {
     async function fetchAttendance() {
@@ -28,6 +29,8 @@ export default function Dashboard() {
         const res = await fetch('/api/attendance');
         const json = await res.json();
         console.log('API Response:', json);
+
+        setFileDate(json.lastUpdated);
         
         if (json.success) {
           console.log('✅ Attendance data received:', json.attendance);
@@ -103,7 +106,8 @@ export default function Dashboard() {
         attendanceSection === 'packaging' ? 'Packaging' :
         'Filter';
       
-      const date = new Date().toLocaleDateString('en-IN');
+    //   const date = new Date().toLocaleDateString('en-IN');
+      const date = filedate;
       
       // Use text-based PDF generation (reliable and structured)
       generateTextPDF(pdf, sectionName, date);
