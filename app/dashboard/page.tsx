@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
-import { ArrowLeft, BarChart3, Database, CheckCircle2, Package, Users, Activity, Box, AlertTriangle, ChevronDown, UserCheck, Download } from 'lucide-react';
+import { ArrowLeft, BarChart3, Database, CheckCircle2, MailCheck, Package, Users, Activity, Box, AlertTriangle, ChevronDown, UserCheck, Download } from 'lucide-react';
 import Link from 'next/link';
 import TechLoader from '@/components/TechLoader'; // Import new loader
 import html2canvas from 'html2canvas';
@@ -12,7 +12,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('attendance');
   const [showAttendanceDropdown, setShowAttendanceDropdown] = useState(false);
-  const [attendanceSection, setAttendanceSection] = useState<'basement' | 'firstFloor' | 'quality' | 'packaging' | 'filter' | null>(null);
+  const [attendanceSection, setAttendanceSection] = useState<'basement' | 'firstFloor' | 'quality' | 'packaging' | 'filter' | 'graphs' | null>(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [generatingTotalPDF, setGeneratingTotalPDF] = useState(false);
   const [attendanceData, setAttendanceData] = useState<any>(null);
@@ -131,6 +131,10 @@ export default function Dashboard() {
       setGeneratingPDF(false);
     }
   };
+
+  const downloadExcelFile = async () => {
+    window.open("https://docs.google.com/spreadsheets/d/13UUl-aSWn86eW0ixwLOxBGahCMjaEA0R/export?format=csv", "_self");
+  }
 
   // PDF for Total Attendance (all sections)
   const handleDownloadTotalAttendancePDF = async () => {
@@ -276,6 +280,14 @@ export default function Dashboard() {
     } finally {
       setGeneratingTotalPDF(false);
     }
+  };
+
+  const email = 'sakshamsriv09@gmail.com';
+
+  const sendEmailHandler = () => {
+      const url = "https://docs.google.com/spreadsheets/d/1nCeM9jtXEfm7fHsHnLVJugxmJU-TirWlAcDPFzEawkM/export?format=csv";
+    //   window.open(`mailto:?subject=Excel File&body=Download here: ${email}`);
+    window.open('https://mail.google.com/mail/u/0/?tab=rm&ogbl#inbox?compose=new')
   };
 
   // Helper function to generate text-based PDF with proper tables
@@ -562,6 +574,9 @@ export default function Dashboard() {
                 active={activeTab === 'equal'} 
                 onClick={() => setActiveTab('equal')} 
             />
+            <div onClick={sendEmailHandler} className='py-2 px-2 flex items-center cursor-pointer bg-[#263247e0] rounded-xl'>
+                <MailCheck size={32} />
+            </div>
         </div>
 
         {/* Professional Attendance Dropdown Menu - Fixed Position */}
@@ -575,7 +590,7 @@ export default function Dashboard() {
                 
                 {/* Dropdown Menu */}
                 <div 
-                    className="attendance-dropdown-menu fixed z-[9999] bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden min-w-[260px] animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="attendance-dropdown-menu overflow-y-auto scrollbar-hide max-h-[60%] fixed z-[9999] bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden min-w-[260px] animate-in fade-in slide-in-from-top-2 duration-200"
                     style={{
                         top: `${dropdownPosition.top}px`,
                         left: `${dropdownPosition.left}px`,
@@ -691,10 +706,43 @@ export default function Dashboard() {
                             }`} />
                             <span>Filter</span>
                         </button>
+
+                        <button
+                            onClick={() => {
+                                setActiveTab('attendance');
+                                setAttendanceSection('graphs');
+                                setShowAttendanceDropdown(false);
+                            }}
+                            className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
+                                activeTab === 'attendance' && attendanceSection === 'graphs'
+                                    ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
+                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                            }`}
+                        >
+                            <div className={`w-2 h-2 rounded-full transition-all ${
+                                activeTab === 'attendance' && attendanceSection === 'graphs'
+                                    ? 'bg-blue-400 shadow-lg shadow-blue-400/50'
+                                    : 'bg-slate-600 group-hover:bg-slate-500'
+                            }`} />
+                            <span>Visual Graphs</span>
+                        </button>
                     </div>
 
                     {/* Divider */}
                     <div className="border-t border-slate-700/50 my-2" />
+
+                    {/* Download Excel File Button */}
+                    <div className="px-2 pb-2">
+                        <button
+                            onClick={() => {
+                                downloadExcelFile();
+                            }}
+                            className="w-full px-5 py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-3 bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 text-green-400 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg border border-green-600/30 hover:border-green-500/50 shadow-lg shadow-green-900/20"
+                        >
+                            <Download size={16} />
+                            {generatingTotalPDF ? 'Generating...' : 'Download Excel File'}
+                        </button>
+                    </div>
 
                     {/* Download Total Button */}
                     <div className="px-2 pb-2">
@@ -707,7 +755,7 @@ export default function Dashboard() {
                             className="w-full px-5 py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 text-green-400 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg border border-green-600/30 hover:border-green-500/50 shadow-lg shadow-green-900/20"
                         >
                             <Download size={16} />
-                            {generatingTotalPDF ? 'Generating...' : 'Download Total Attendance'}
+                            {generatingTotalPDF ? 'Generating...' : 'Download Attendance'}
                         </button>
                     </div>
                 </div>
@@ -736,7 +784,7 @@ export default function Dashboard() {
                     {/* Content Wrapper for PDF */}
                     <div ref={contentRef}>
                         {/* Basements Section */}
-                        {attendanceSection === 'basement' && (
+                    {attendanceSection === 'basement' && (
                             <>
                                 {/* Header with Download Button */}
                                 <div className="flex items-center justify-between border-b border-slate-700 pb-4 mb-8">
@@ -921,6 +969,22 @@ export default function Dashboard() {
                                 </TableCard>
                             </div>
                         </>
+                    )}
+
+                    {/* Visual Graphs */}
+                    {attendanceSection === 'graphs' && (
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <TableCard title="Attendance Graphs">
+                                <div className="h-64 bg-slate-800 rounded-lg flex items-center justify-center">
+                                    <p className="text-slate-400">Attendance Graph Visualization</p>
+                                </div>
+                            </TableCard>
+                            <TableCard title="Department-wise Attendance">
+                                <div className="h-64 bg-slate-800 rounded-lg flex items-center justify-center">
+                                    <p className="text-slate-400">Department-wise Attendance Visualization</p>
+                                </div>
+                            </TableCard>
+                        </div>
                     )}
                     </div>
                 </div>
