@@ -6,6 +6,7 @@ import { ArrowLeft, BarChart3, Database, CheckCircle2, Package, Users, Activity,
 import Link from 'next/link';
 import TechLoader from '@/components/TechLoader'; // Import new loader
 import html2canvas from 'html2canvas';
+import AttendanceLineGraph from "@/components/AttendanceLineGraph";
 
 export default function Dashboard() {
 

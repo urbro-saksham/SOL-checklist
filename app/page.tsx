@@ -305,6 +305,8 @@ export default function Home() {
             </span>
         </div>
 
+{/* 📈 Attendance Trend Graph */}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl mx-auto">
           {data.map((dept) => {
             const isIT = dept.id === 'it_check';
