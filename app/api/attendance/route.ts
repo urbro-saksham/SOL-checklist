@@ -10,8 +10,6 @@ export const dynamic = 'force-dynamic';
 
 const INDEX_URL = "https://docs.google.com/spreadsheets/d/1nCeM9jtXEfm7fHsHnLVJugxmJU-TirWlAcDPFzEawkM/export?format=csv";
 
-
-
 // Path where we cache the latest downloaded attendance Excel file
 const LOCAL_EXCEL_PATH = path.join(process.cwd(), 'attendance-latest.xlsx');
 
@@ -537,8 +535,8 @@ export async function GET() {
     console.log('  🔧 First Floor Gummers: (1ST FLOOR or GROUND FLOOR) location + GUMMER designation');
     console.log('  ✅ Quality: Any location + CHECKER designation');
     console.log('  📦 Packing: Any location + Packing related designation');
-  console.log('  🧵 Filter Maker: Any location + designation contains "FILTER MAKER"');
-  console.log('  📂 Filter Folder: Any location + designation contains "FILTER FOLDER"');
+    console.log('  🧵 Filter Maker: Any location + designation contains "FILTER MAKER"');
+    console.log('  📂 Filter Folder: Any location + designation contains "FILTER FOLDER"');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     
     const counts = {
