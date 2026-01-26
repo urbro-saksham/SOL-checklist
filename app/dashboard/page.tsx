@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { ArrowLeft, BarChart3, Database, CheckCircle2, MailCheck, Package, Users, Activity, Box, AlertTriangle, ChevronDown, UserCheck, Download, X, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import TechLoader from '@/components/TechLoader'; // Import new loader
-import html2canvas from 'html2canvas';
+import AttendanceLineGraph from "@/components/AttendanceLineGraph";
 
 export default function Dashboard() {
 
@@ -1002,18 +1002,7 @@ export default function Dashboard() {
 
                     {/* Visual Graphs */}
                     {attendanceSection === 'graphs' && (
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <TableCard title="Attendance Graphs">
-                                <div className="h-64 bg-slate-800 rounded-lg flex items-center justify-center">
-                                    <p className="text-slate-400">Attendance Graph Visualization</p>
-                                </div>
-                            </TableCard>
-                            <TableCard title="Department-wise Attendance">
-                                <div className="h-64 bg-slate-800 rounded-lg flex items-center justify-center">
-                                    <p className="text-slate-400">Department-wise Attendance Visualization</p>
-                                </div>
-                            </TableCard>
-                        </div>
+                        <AttendanceLineGraph />
                     )}
                     </div>
                 </div>
