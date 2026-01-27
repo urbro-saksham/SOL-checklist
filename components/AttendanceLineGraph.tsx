@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -10,48 +11,117 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { readAttendanceExcel } from "@/lib/readExcel";
 
-const data = [
-  { date: "1 Jan", folder: 12, maker: 9 },
-  { date: "5 Jan", folder: 13, maker: 10 },
-  { date: "10 Jan", folder: 14, maker: 11 },
-  { date: "15 Jan", folder: 12, maker: 10 },
-  { date: "20 Jan", folder: 15, maker: 12 },
-  { date: "22 Jan", folder: 12, maker: 9 },
-];
+type Row = {
+  date: string;
+  attendance: number;
+  folder: number;
+  maker: number;
+};
 
 export default function AttendanceLineGraph() {
+  const [data, setData] = useState<Row[]>([]);
+  const [error, setError] = useState("");
+
+  const loadData = async () => {
+    try {
+      const rows = await readAttendanceExcel();
+
+      const formatted = rows.map((row: any) => ({
+        date: String(row.date),
+        attendance: Number(row.attendance) || 0,
+        folder: Number(row.folder) || 0,
+        maker: Number(row.maker) || 0,
+      }));
+
+      setData(formatted);
+      setError("");
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  // ✅ DAILY UPDATE
+  useEffect(() => {
+    loadData();
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+    const interval = setInterval(loadData, ONE_DAY);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (error) {
+    return (
+      <div className="mt-6 rounded-xl bg-red-950 p-4 text-red-300">
+        {error}
+      </div>
+    );
+  }
+
   return (
-    <div className="mt-6 rounded-xl bg-[#0f172a] p-5">
-      <h2 className="text-lg font-semibold text-white mb-4">
-        Attendance Trend (1–22 Jan)
-      </h2>
+    <div className="space-y-10 mt-6">
+      {/* ================= ATTENDANCE GRAPH ================= */}
+      <div className="rounded-xl bg-[#0f172a] p-5">
+        <h2 className="mb-4 text-lg font-semibold text-white">
+          Attendance Trend
+        </h2>
 
-      <div className="h-[320px] w-full">
-        <ResponsiveContainer>
-          <LineChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-            <XAxis dataKey="date" stroke="#cbd5f5" />
-            <YAxis stroke="#cbd5f5" />
-            <Tooltip />
-            <Legend />
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="date" stroke="#cbd5f5" />
+              <YAxis stroke="#cbd5f5" />
+              <Tooltip />
+              <Legend />
 
-            <Line
-              type="monotone"
-              dataKey="folder"
-              stroke="#3b82f6"
-              strokeWidth={2}
-              name="Filter Folder"
-            />
-            <Line
-              type="monotone"
-              dataKey="maker"
-              stroke="#22c55e"
-              strokeWidth={2}
-              name="Filter Maker"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+              <Line
+                type="monotone"
+                dataKey="attendance"
+                stroke="#38bdf8"
+                strokeWidth={3}
+                name="Attendance"
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ================= WORK DONE GRAPH ================= */}
+      <div className="rounded-xl bg-[#0f172a] p-5">
+        <h2 className="mb-4 text-lg font-semibold text-white">
+          Folding & Making Done
+        </h2>
+
+        <div className="h-[300px] w-full">
+          <ResponsiveContainer>
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+              <XAxis dataKey="date" stroke="#cbd5f5" />
+              <YAxis stroke="#cbd5f5" />
+              <Tooltip />
+              <Legend />
+
+              <Line
+                type="monotone"
+                dataKey="folder"
+                stroke="#22c55e"
+                strokeWidth={2}
+                name="Folding Done"
+                dot={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="maker"
+                stroke="#f97316"
+                strokeWidth={2}
+                name="Making Done"
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
