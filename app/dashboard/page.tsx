@@ -297,7 +297,8 @@ export default function Dashboard() {
       const response = await fetch('/api/send-email', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'filedate': filedate
         }
       });
       const result = await response.json();

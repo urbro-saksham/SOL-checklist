@@ -3,7 +3,7 @@ import axios from "axios";
 
 const FILE_URL = "https://docs.google.com/spreadsheets/d/13UUl-aSWn86eW0ixwLOxBGahCMjaEA0R/export?format=csv";
 
-export async function POST() {
+export async function POST(request) {
   try {
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -17,11 +17,15 @@ export async function POST() {
       responseType: "arraybuffer"
     });
 
+    const date = request.headers.get('filedate');
+
+    const filedate = date ? date : new Date().toLocaleDateString('en-IN');
+
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: "suckzhum@gmail.com",
-      subject: `Attendance Sheet ${new Date().toLocaleDateString('en-IN')}`,
-      text: `Attached is the Attendance Excel Sheet of ${new Date().toLocaleDateString('en-IN')}.`,
+      subject: `Attendance Sheet ${filedate}`,
+      text: `Attached is the Attendance Excel Sheet of ${filedate}.`,
       attachments: [
         {
           filename: "sheet-data.csv",
