@@ -3,7 +3,7 @@ import axios from "axios";
 
 const FILE_URL = "https://docs.google.com/spreadsheets/d/13UUl-aSWn86eW0ixwLOxBGahCMjaEA0R/export?format=csv";
 
-export async function POST(request) {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { filedate: date, email } = body;
@@ -43,10 +43,10 @@ export async function POST(request) {
     });
 
     return Response.json({ success: true });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
     return Response.json(
-      { success: false, error: err.message },
+      { success: false, error: err?.message || 'Unknown error' },
       { status: 500 }
     );
   }

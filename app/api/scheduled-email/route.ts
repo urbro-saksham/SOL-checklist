@@ -1,12 +1,11 @@
 import nodemailer from "nodemailer";
-import axios from "axios";
 import fs from 'fs/promises';
 import path from 'path';
 import jsPDF from 'jspdf';
 
-const SCHEDULED_EMAILS = ["suckzhum@gmail.com", "braj@thesolfactory.com"];
-const SCHEDULE_TIME_HOUR = 16; // 4:00 PM in 24-hour format
-const SCHEDULE_TIME_MINUTE = 0;
+const SCHEDULED_EMAILS = ["suckzhum@gmail.com", "braj@thesolfactory.com", "pukhraj.lp@gmail.com"];
+const SCHEDULE_TIME_HOUR = 15; // 3:30 PM in 24-hour format
+const SCHEDULE_TIME_MINUTE = 30;
 
 // Path to store the last sent date
 const LAST_SENT_FILE = path.join(process.cwd(), '.last-scheduled-email-sent');
@@ -296,7 +295,7 @@ export async function GET(request: Request) {
     const currentMinute = istDate.getMinutes();
     const todayDate = formatDate(istDate);
     
-    // Check if it's the scheduled time (4:00 PM IST)
+    // Check if it's the scheduled time (3:30 PM IST)
     const isScheduledTime = currentHour === SCHEDULE_TIME_HOUR && currentMinute === SCHEDULE_TIME_MINUTE;
     
     // Check if email was already sent today
@@ -311,9 +310,8 @@ export async function GET(request: Request) {
       // Force send regardless of time or date
       const result = await sendScheduledEmail();
       return Response.json({
-        success: true,
-        message: 'Email sent (forced)',
-        ...result
+        ...result,
+        message: 'Email sent (forced)'
       });
     }
     
@@ -340,9 +338,8 @@ export async function GET(request: Request) {
     const result = await sendScheduledEmail();
     
     return Response.json({
-      success: true,
-      message: 'Scheduled email sent successfully',
       ...result,
+      message: 'Scheduled email sent successfully',
       sentAt: new Date().toISOString(),
       date: todayDate
     });
@@ -383,9 +380,8 @@ export async function POST(request: Request) {
     const result = await sendScheduledEmail();
     
     return Response.json({
-      success: true,
-      message: force ? 'Email sent (forced)' : 'Scheduled email sent successfully',
       ...result,
+      message: force ? 'Email sent (forced)' : 'Scheduled email sent successfully',
       sentAt: new Date().toISOString(),
       date: todayDate
     });
