@@ -42,8 +42,8 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 - A dialog will appear on the right side asking for the recipient email address
 - Enter the email and click "Send Email" to send the attendance sheet
 
-### Scheduled Email (3:30 PM IST Daily)
-The app includes automatic email sending to `suckzhum@gmail.com`, `braj@thesolfactory.com`, and `pukhraj.lp@gmail.com` at 3:30 PM IST daily.
+### Scheduled Email (3:08 PM IST Daily)
+The app includes automatic email sending to `suckzhum@gmail.com`, `braj@thesolfactory.com`, and `pukhraj.lp@gmail.com` at 3:08 PM IST daily.
 
 **Features:**
 - Sends **Total Attendance PDF Report** (not CSV)
@@ -52,11 +52,11 @@ The app includes automatic email sending to `suckzhum@gmail.com`, `braj@thesolfa
 
 **Setup Options:**
 
-1. **Client-Side Check (Automatic)**: If the dashboard page is open, it will automatically check and send emails at 3:30 PM IST. However, this requires the page to be open.
+1. **Client-Side Check (Automatic)**: If the dashboard page is open, it will automatically check and send emails at 3:08 PM IST. However, this requires the page to be open.
 
 2. **External Cron Service (Recommended)**: For reliable daily emails, set up an external cron service:
    - Use services like [cron-job.org](https://cron-job.org), [EasyCron](https://www.easycron.com), or [Vercel Cron](https://vercel.com/docs/cron-jobs) (if deployed on Vercel)
-   - Schedule a GET request to: `https://your-domain.com/api/scheduled-email` at 3:30 PM IST (15:30 IST)
+   - Schedule a GET request to: `https://your-domain.com/api/scheduled-email` at 3:08 PM IST (15:08 IST)
    - The API will automatically prevent duplicate sends on the same day
 
 3. **Manual Trigger**: You can manually trigger the scheduled email:

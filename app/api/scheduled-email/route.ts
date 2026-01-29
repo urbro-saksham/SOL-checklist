@@ -4,8 +4,8 @@ import path from 'path';
 import jsPDF from 'jspdf';
 
 const SCHEDULED_EMAILS = ["suckzhum@gmail.com", "braj@thesolfactory.com", "pukhraj.lp@gmail.com"];
-const SCHEDULE_TIME_HOUR = 15; // 3:30 PM in 24-hour format
-const SCHEDULE_TIME_MINUTE = 30;
+const SCHEDULE_TIME_HOUR = 15; // 3:08 PM in 24-hour format
+const SCHEDULE_TIME_MINUTE = 8;
 
 // Path to store the last sent date
 const LAST_SENT_FILE = path.join(process.cwd(), '.last-scheduled-email-sent');
@@ -295,7 +295,7 @@ export async function GET(request: Request) {
     const currentMinute = istDate.getMinutes();
     const todayDate = formatDate(istDate);
     
-    // Check if it's the scheduled time (3:30 PM IST)
+    // Check if it's the scheduled time (3:08 PM IST)
     const isScheduledTime = currentHour === SCHEDULE_TIME_HOUR && currentMinute === SCHEDULE_TIME_MINUTE;
     
     // Check if email was already sent today

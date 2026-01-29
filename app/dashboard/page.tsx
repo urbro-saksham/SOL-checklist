@@ -57,7 +57,7 @@ export default function Dashboard() {
     fetchAttendance();
   }, []);
 
-  // Scheduled email check (runs every minute to check if it's 3:30 PM IST)
+  // Scheduled email check (runs every minute to check if it's 3:08 PM IST)
   useEffect(() => {
     const checkScheduledEmail = async () => {
       const now = new Date();
@@ -69,10 +69,10 @@ export default function Dashboard() {
       const currentHour = istDate.getHours();
       const currentMinute = istDate.getMinutes();
       
-      // Check if it's exactly 3:30 PM IST
-      if (currentHour === 15 && currentMinute === 30) {
+      // Check if it's exactly 3:08 PM IST
+      if (currentHour === 15 && currentMinute === 8) {
         try {
-          console.log('🕒 Scheduled email time detected (3:30 PM IST). Triggering scheduled email...');
+          console.log('🕒 Scheduled email time detected (3:08 PM IST). Triggering scheduled email...');
           const response = await fetch('/api/scheduled-email', {
             method: 'GET',
             headers: {
