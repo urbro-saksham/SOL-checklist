@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import jsPDF from 'jspdf';
 
-const SCHEDULED_EMAILS = ["suckzhum@gmail.com", "braj@thesolfactory.com", "pukhraj.lp@gmail.com"];
+const SCHEDULED_EMAILS = ["braj@thesolfactory.com", "pukhraj.lp@gmail.com"];
 const SCHEDULE_TIME_HOUR = 16; // 4:05 PM in 24-hour format
 const SCHEDULE_TIME_MINUTE = 5;
 

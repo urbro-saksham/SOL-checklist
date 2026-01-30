@@ -1,30 +1,58 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useRef } from 'react';
-import Image from 'next/image';
-import { ArrowLeft, BarChart3, Database, CheckCircle2, MailCheck, Package, Users, Activity, Box, AlertTriangle, ChevronDown, UserCheck, Download, X, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import Link from 'next/link';
-import TechLoader from '@/components/TechLoader'; // Import new loader
-import AttendanceLineGraph from "@/components/views/AttendanceLineGraph";
+import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
+import {
+  ArrowLeft,
+  BarChart3,
+  Database,
+  CheckCircle2,
+  MailCheck,
+  Package,
+  Users,
+  Activity,
+  Box,
+  AlertTriangle,
+  ChevronDown,
+  UserCheck,
+  Download,
+  X,
+  CheckCircle,
+  XCircle,
+  Loader2,
+} from "lucide-react";
+import Link from "next/link";
+import TechLoader from "@/components/TechLoader"; // Import new loader
+import VisualData from "@/components/visualData/Page";
 
 export default function Dashboard() {
-
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('attendance');
+  const [activeTab, setActiveTab] = useState("attendance");
   const [showAttendanceDropdown, setShowAttendanceDropdown] = useState(false);
-  const [attendanceSection, setAttendanceSection] = useState<'basement' | 'firstFloor' | 'quality' | 'packaging' | 'filter' | 'graphs' | null>(null);
+  const [attendanceSection, setAttendanceSection] = useState<
+    | "basement"
+    | "firstFloor"
+    | "quality"
+    | "packaging"
+    | "filter"
+    | "graphs"
+    | null
+  >(null);
   const [generatingPDF, setGeneratingPDF] = useState(false);
   const [generatingTotalPDF, setGeneratingTotalPDF] = useState(false);
   const [attendanceData, setAttendanceData] = useState<any>(null);
-  const [lastUpdated, setLastUpdated] = useState<string>('');
+  const [lastUpdated, setLastUpdated] = useState<string>("");
   const contentRef = useRef<HTMLDivElement>(null);
   const attendanceButtonRef = useRef<HTMLButtonElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
-  const[filedate, setFileDate] = useState('')
-  const [emailNotification, setEmailNotification] = useState<{ show: boolean; type: 'loading' | 'success' | 'error'; message: string } | null>(null);
+  const [filedate, setFileDate] = useState("");
+  const [emailNotification, setEmailNotification] = useState<{
+    show: boolean;
+    type: "loading" | "success" | "error";
+    message: string;
+  } | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
-  const [emailInput, setEmailInput] = useState('');
+  const [emailInput, setEmailInput] = useState("");
   const emailDialogRef = useRef<HTMLDivElement>(null);
   const emailButtonRef = useRef<HTMLDivElement>(null);
   const [emailDialogPosition, setEmailDialogPosition] = useState({ top: 0, left: 0 });
@@ -32,24 +60,24 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchAttendance() {
       try {
-        console.log('📊 Fetching attendance data...');
-        const res = await fetch('/api/attendance');
+        console.log("📊 Fetching attendance data...");
+        const res = await fetch("/api/attendance");
         const json = await res.json();
-        console.log('API Response:', json);
+        console.log("API Response:", json);
 
         setFileDate(json.lastUpdated);
-        
+
         if (json.success) {
-          console.log('✅ Attendance data received:', json.attendance);
-          console.log('📅 Last Updated:', json.lastUpdated);
+          console.log("✅ Attendance data received:", json.attendance);
+          console.log("📅 Last Updated:", json.lastUpdated);
           setAttendanceData(json.attendance);
           setLastUpdated(json.lastUpdated);
         } else {
-          console.error('❌ API Error:', json.error);
-          if (json.message) console.log('Error message:', json.message);
+          console.error("❌ API Error:", json.error);
+          if (json.message) console.log("Error message:", json.message);
         }
       } catch (e) {
-        console.error('❌ Failed to fetch attendance:', e);
+        console.error("❌ Failed to fetch attendance:", e);
       } finally {
         setTimeout(() => setLoading(false), 1000);
       }
@@ -72,22 +100,22 @@ export default function Dashboard() {
       // Check if it's exactly 4:05 PM IST
       if (currentHour === 16 && currentMinute === 5) {
         try {
-          console.log('🕒 Scheduled email time detected (4:05 PM IST). Triggering scheduled email...');
-          const response = await fetch('/api/scheduled-email', {
-            method: 'GET',
+          console.log("🕒 Scheduled email time detected (4:05 PM IST). Triggering scheduled email...");
+          const response = await fetch("/api/scheduled-email", {
+            method: "GET",
             headers: {
-              'Content-Type': 'application/json',
-            }
+              "Content-Type": "application/json",
+            },
           });
           const result = await response.json();
-          
+
           if (result.success) {
-            console.log('✅ Scheduled email sent successfully:', result.message);
+            console.log("✅ Scheduled email sent successfully:", result.message);
           } else {
-            console.log('ℹ️ Scheduled email:', result.message);
+            console.log("ℹ️ Scheduled email:", result.message);
           }
         } catch (error) {
-          console.error('❌ Error triggering scheduled email:', error);
+          console.error("❌ Error triggering scheduled email:", error);
         }
       }
     };
@@ -107,7 +135,7 @@ export default function Dashboard() {
       const rect = attendanceButtonRef.current.getBoundingClientRect();
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX
+        left: rect.left + window.scrollX,
       });
     }
   }, [showAttendanceDropdown]);
@@ -126,95 +154,104 @@ export default function Dashboard() {
   // Close dropdown when clicking outside
   useEffect(() => {
     if (!showAttendanceDropdown) return;
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       // Check if click is outside both the button and the dropdown
-      if (!target.closest('.attendance-dropdown-container') && !target.closest('.attendance-dropdown-menu')) {
+      if (
+        !target.closest(".attendance-dropdown-container") &&
+        !target.closest(".attendance-dropdown-menu")
+      ) {
         setShowAttendanceDropdown(false);
       }
     };
-    
+
     // Small delay to prevent immediate close on button click
     const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }, 100);
-    
+
     return () => {
       clearTimeout(timer);
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showAttendanceDropdown]);
 
   // Close email dialog when clicking outside (backdrop handles this, but keeping for consistency)
   useEffect(() => {
     if (!showEmailDialog) return;
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       // Check if click is outside both the button and the dialog
-      if (!target.closest('.email-button-container') && !target.closest('.email-dialog-menu')) {
+      if (
+        !target.closest(".email-button-container") &&
+        !target.closest(".email-dialog-menu")
+      ) {
         closeEmailDialog();
       }
     };
-    
+
     // Small delay to prevent immediate close on button click
     const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }, 100);
-    
+
     return () => {
       clearTimeout(timer);
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [showEmailDialog]);
 
   // PDF Generation Function - ALWAYS DOWNLOADS
   const handleDownloadPDF = async () => {
     if (!attendanceSection || !attendanceData) {
-      console.warn('No attendance data available for PDF generation');
+      console.warn("No attendance data available for PDF generation");
       return;
     }
-    
+
     setGeneratingPDF(true);
     console.log("Generating PDF with attendance data:", attendanceData);
 
     try {
       // Dynamic import for jsPDF
-      const { default: jsPDF } = await import('jspdf');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const sectionName = 
-        attendanceSection === 'basement' ? 'Basement' :
-        attendanceSection === 'firstFloor' ? 'First Floor' :
-        attendanceSection === 'quality' ? 'Quality' :
-        attendanceSection === 'packaging' ? 'Packaging' :
-        'Filter';
-      
-    //   const date = new Date().toLocaleDateString('en-IN');
+      const { default: jsPDF } = await import("jspdf");
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const sectionName =
+        attendanceSection === "basement"
+          ? "Basement"
+          : attendanceSection === "firstFloor"
+            ? "First Floor"
+            : attendanceSection === "quality"
+              ? "Quality"
+              : attendanceSection === "packaging"
+                ? "Packaging"
+                : "Filter";
+
+      //   const date = new Date().toLocaleDateString('en-IN');
       const date = filedate;
-      
+
       // Use text-based PDF generation (reliable and structured)
       generateTextPDF(pdf, sectionName, date);
-      
-      const fileName = `Attendance_${sectionName.replace(/\s+/g, '_')}_${date.replace(/\//g, '-')}.pdf`;
+
+      const fileName = `Attendance_${sectionName.replace(/\s+/g, "_")}_${date.replace(/\//g, "-")}.pdf`;
       pdf.save(fileName);
-      
     } catch (error) {
-      console.error('Critical PDF error:', error);
+      console.error("Critical PDF error:", error);
       // Last resort - create minimal PDF
       try {
-        const { default: jsPDF } = await import('jspdf');
+        const { default: jsPDF } = await import("jspdf");
         const pdf = new jsPDF();
         pdf.setFontSize(16);
-        pdf.text('Attendance Report', 20, 20);
+        pdf.text("Attendance Report", 20, 20);
         pdf.setFontSize(12);
         pdf.text(`Department: ${attendanceSection}`, 20, 40);
-        pdf.text(`Date: ${new Date().toLocaleDateString('en-IN')}`, 20, 50);
-        pdf.text('Error: Could not generate detailed report.', 20, 70);
+        pdf.text(`Date: ${new Date().toLocaleDateString("en-IN")}`, 20, 50);
+        pdf.text("Error: Could not generate detailed report.", 20, 70);
         pdf.save(`Attendance_Report_${new Date().getTime()}.pdf`);
       } catch (finalError) {
-        console.error('Final fallback failed:', finalError);
+        console.error("Final fallback failed:", finalError);
       }
     } finally {
       setGeneratingPDF(false);
@@ -222,47 +259,52 @@ export default function Dashboard() {
   };
 
   const downloadExcelFile = async () => {
-    window.open("https://docs.google.com/spreadsheets/d/13UUl-aSWn86eW0ixwLOxBGahCMjaEA0R/export?format=csv", "_self");
-  }
+    window.open(
+      "https://docs.google.com/spreadsheets/d/13UUl-aSWn86eW0ixwLOxBGahCMjaEA0R/export?format=csv",
+      "_self",
+    );
+  };
 
   // PDF for Total Attendance (all sections)
   const handleDownloadTotalAttendancePDF = async () => {
     if (!attendanceData) {
-      console.warn('No attendance data available for total attendance PDF generation');
+      console.warn(
+        "No attendance data available for total attendance PDF generation",
+      );
       return;
     }
 
     setGeneratingTotalPDF(true);
 
     try {
-      const { default: jsPDF } = await import('jspdf');
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const { default: jsPDF } = await import("jspdf");
+      const pdf = new jsPDF("p", "mm", "a4");
 
-      const date = new Date().toLocaleDateString('en-IN');
+      const date = new Date().toLocaleDateString("en-IN");
 
       // Header
       pdf.setFillColor(1, 2, 54);
-      pdf.rect(0, 0, 210, 40, 'F');
+      pdf.rect(0, 0, 210, 40, "F");
       pdf.setFontSize(24);
       pdf.setTextColor(255, 255, 255);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('SOL FRANCE', 20, 18);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("SOL FRANCE", 20, 18);
       pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('Total Attendance Summary', 20, 30);
+      pdf.setFont("helvetica", "normal");
+      pdf.text("Total Attendance Summary", 20, 30);
 
       pdf.setFontSize(16);
       pdf.setTextColor(0, 0, 0);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Total Attendance Report', 20, 55);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Total Attendance Report", 20, 55);
 
       let yPos = 70;
 
       pdf.setFontSize(12);
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Date of Report', 20, yPos);
-      pdf.setFont('helvetica', 'normal');
+      pdf.text("Date of Report", 20, yPos);
+      pdf.setFont("helvetica", "normal");
       pdf.setTextColor(0, 0, 0);
       pdf.text(date, 70, yPos);
       yPos += 12;
@@ -295,15 +337,15 @@ export default function Dashboard() {
       const totalEmployees = totalPresent + totalAbsent;
 
       // Add Total Summary Section
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Total Summary', 20, yPos);
+      pdf.text("Total Summary", 20, yPos);
       yPos += 8;
-      
+
       drawTable(pdf, yPos, [
-        ['Total Employees', totalEmployees.toString() + ' Staff'],
-        ['Total Present', totalPresent.toString() + ' Staff'],
-        ['Total Absent', totalAbsent.toString() + ' Staff']
+        ["Total Employees", totalEmployees.toString() + " Staff"],
+        ["Total Present", totalPresent.toString() + " Staff"],
+        ["Total Absent", totalAbsent.toString() + " Staff"],
       ]);
       yPos += 40;
 
@@ -312,7 +354,7 @@ export default function Dashboard() {
           pdf.addPage();
           yPos = 20;
         }
-        pdf.setFont('helvetica', 'bold');
+        pdf.setFont("helvetica", "bold");
         pdf.setTextColor(1, 2, 54);
         pdf.text(title, 20, yPos);
         yPos += 8;
@@ -320,52 +362,86 @@ export default function Dashboard() {
         yPos += 8 + rows.length * 8 + 8;
       };
 
-      addSection('Basement', [
-        ['Rollers Present', `${attendanceData?.basementRollersPresent || 0} / ${attendanceData?.basementRollers || 0}`],
-        ['Gummers Present', `${attendanceData?.basementfilterPresent || 0} / ${attendanceData?.basementfilterTotal || 0}`],
-        ['Supervisors Present', `${attendanceData?.basementSupervisorPresent || 0} / ${attendanceData?.basementSupervisorTotal || 0}`],
+      addSection("Basement", [
+        [
+          "Rollers Present",
+          `${attendanceData?.basementRollersPresent || 0} / ${attendanceData?.basementRollers || 0}`,
+        ],
+        [
+          "Gummers Present",
+          `${attendanceData?.basementfilterPresent || 0} / ${attendanceData?.basementfilterTotal || 0}`,
+        ],
+        [
+          "Supervisors Present",
+          `${attendanceData?.basementSupervisorPresent || 0} / ${attendanceData?.basementSupervisorTotal || 0}`,
+        ],
       ]);
 
-      addSection('First Floor', [
-        ['Rollers Present', `${attendanceData?.firstFloorRollersPresent || 0} / ${attendanceData?.firstFloorRollers || 0}`],
-        ['Gummers Present', `${attendanceData?.firstFloorfilterPresent || 0} / ${attendanceData?.firstFloorfilterTotal || 0}`],
-        ['Supervisors Present', `${attendanceData?.firstFloorSupervisorPresent || 0} / ${attendanceData?.firstFloorSupervisorTotal || 0}`],
+      addSection("First Floor", [
+        [
+          "Rollers Present",
+          `${attendanceData?.firstFloorRollersPresent || 0} / ${attendanceData?.firstFloorRollers || 0}`,
+        ],
+        [
+          "Gummers Present",
+          `${attendanceData?.firstFloorfilterPresent || 0} / ${attendanceData?.firstFloorfilterTotal || 0}`,
+        ],
+        [
+          "Supervisors Present",
+          `${attendanceData?.firstFloorSupervisorPresent || 0} / ${attendanceData?.firstFloorSupervisorTotal || 0}`,
+        ],
       ]);
 
-      addSection('Quality', [
-        ['Total Present', `${attendanceData?.qualityPresent || 0} / ${attendanceData?.qualityTotal || 0}`],
+      addSection("Quality", [
+        [
+          "Total Present",
+          `${attendanceData?.qualityPresent || 0} / ${attendanceData?.qualityTotal || 0}`,
+        ],
       ]);
 
-      addSection('Packing', [
-        ['Total Present', `${attendanceData?.packingPresent || 0} / ${attendanceData?.packingTotal || 0}`],
+      addSection("Packing", [
+        [
+          "Total Present",
+          `${attendanceData?.packingPresent || 0} / ${attendanceData?.packingTotal || 0}`,
+        ],
       ]);
 
-      addSection('Filter', [
-        ['Filter Maker Present', `${attendanceData?.filterMakerPresent || 0} / ${attendanceData?.filterMakerTotal || 0}`],
-        ['Filter Folder Present', `${attendanceData?.filterFolderPresent || 0} / ${attendanceData?.filterFolderTotal || 0}`],
+      addSection("Filter", [
+        [
+          "Filter Maker Present",
+          `${attendanceData?.filterMakerPresent || 0} / ${attendanceData?.filterMakerTotal || 0}`,
+        ],
+        [
+          "Filter Folder Present",
+          `${attendanceData?.filterFolderPresent || 0} / ${attendanceData?.filterFolderTotal || 0}`,
+        ],
       ]);
 
       pdf.setFontSize(8);
       pdf.setTextColor(128, 128, 128);
-      pdf.setFont('helvetica', 'italic');
+      pdf.setFont("helvetica", "italic");
       pdf.text(
-        `Generated on ${new Date().toLocaleString('en-IN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: true
+        `Generated on ${new Date().toLocaleString("en-IN", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
         })}`,
         20,
-        280
+        280,
       );
-      pdf.text(`© ${new Date().getFullYear()} Sol France. All rights reserved.`, 20, 285);
+      pdf.text(
+        `© ${new Date().getFullYear()} Sol France. All rights reserved.`,
+        20,
+        285,
+      );
 
-      const fileName = `Attendance_Total_${date.replace(/\//g, '-')}.pdf`;
+      const fileName = `Attendance_Total_${date.replace(/\//g, "-")}.pdf`;
       pdf.save(fileName);
     } catch (error) {
-      console.error('Critical Total Attendance PDF error:', error);
+      console.error("Critical Total Attendance PDF error:", error);
     } finally {
       setGeneratingTotalPDF(false);
     }
@@ -373,19 +449,68 @@ export default function Dashboard() {
 
   const openEmailDialog = () => {
     setShowEmailDialog(true);
-    setEmailInput('');
+    setEmailInput("");
   };
 
   const closeEmailDialog = () => {
     setShowEmailDialog(false);
-    setEmailInput('');
+    setEmailInput("");
+  };
+
+  const testScheduledEmail = async () => {
+    setEmailNotification({
+      show: true,
+      type: "loading",
+      message: "Testing scheduled email...",
+    });
+
+    try {
+      const response = await fetch("/api/scheduled-email?force=true", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        setEmailNotification({
+          show: true,
+          type: "success",
+          message: `Test email sent successfully! ${result.message || ""}`,
+        });
+      } else {
+        setEmailNotification({
+          show: true,
+          type: "error",
+          message: result.message || result.error || "Failed to send test email.",
+        });
+      }
+      setTimeout(() => {
+        setEmailNotification(null);
+      }, 6000);
+    } catch (error: any) {
+      console.error("Error testing scheduled email:", error);
+      setEmailNotification({
+        show: true,
+        type: "error",
+        message: `Error: ${error.message || "Failed to trigger test email"}`,
+      });
+      setTimeout(() => {
+        setEmailNotification(null);
+      }, 6000);
+    }
   };
 
   const sendEmailHandler = async (recipientEmail?: string) => {
     const emailToSend = recipientEmail || emailInput;
-    
+
     if (!emailToSend || !emailToSend.trim()) {
-      setEmailNotification({ show: true, type: 'error', message: 'Please enter a valid email address.' });
+      setEmailNotification({
+        show: true,
+        type: "error",
+        message: "Please enter a valid email address.",
+      });
       setTimeout(() => {
         setEmailNotification(null);
       }, 4000);
@@ -395,7 +520,11 @@ export default function Dashboard() {
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(emailToSend.trim())) {
-      setEmailNotification({ show: true, type: 'error', message: 'Please enter a valid email address.' });
+      setEmailNotification({
+        show: true,
+        type: "error",
+        message: "Please enter a valid email address.",
+      });
       setTimeout(() => {
         setEmailNotification(null);
       }, 4000);
@@ -404,34 +533,50 @@ export default function Dashboard() {
 
     // Close dialog
     closeEmailDialog();
-    
+
     // Show loading state immediately
-    setEmailNotification({ show: true, type: 'loading', message: 'Sending email...' });
-    
+    setEmailNotification({
+      show: true,
+      type: "loading",
+      message: "Sending email...",
+    });
+
     try {
-      const response = await fetch('/api/send-email', {
-        method: 'POST',
+      const response = await fetch("/api/send-email", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           filedate: filedate,
-          email: emailToSend.trim()
-        })
+          email: emailToSend.trim(),
+        }),
       });
       const result = await response.json();
       if (result.success) {
-        setEmailNotification({ show: true, type: 'success', message: `Email sent successfully to ${emailToSend.trim()}!` });
+        setEmailNotification({
+          show: true,
+          type: "success",
+          message: `Email sent successfully to ${emailToSend.trim()}!`,
+        });
       } else {
-        setEmailNotification({ show: true, type: 'error', message: result.error || 'Failed to send email.' });
+        setEmailNotification({
+          show: true,
+          type: "error",
+          message: result.error || "Failed to send email.",
+        });
       }
       // Auto-hide notification after 4 seconds
       setTimeout(() => {
         setEmailNotification(null);
       }, 4000);
     } catch (error) {
-      console.error('Error sending email:', error);
-      setEmailNotification({ show: true, type: 'error', message: 'Error sending email. Please try again.' });
+      console.error("Error sending email:", error);
+      setEmailNotification({
+        show: true,
+        type: "error",
+        message: "Error sending email. Please try again.",
+      });
       setTimeout(() => {
         setEmailNotification(null);
       }, 4000);
@@ -443,207 +588,277 @@ export default function Dashboard() {
   const generateTextPDF = (pdf: any, sectionName: string, date: string) => {
     // Header with logo area
     pdf.setFillColor(1, 2, 54);
-    pdf.rect(0, 0, 210, 40, 'F');
-    
+    pdf.rect(0, 0, 210, 40, "F");
+
     pdf.setFontSize(24);
     pdf.setTextColor(255, 255, 255);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('SOL FRANCE', 20, 18);
-    
+    pdf.setFont("helvetica", "bold");
+    pdf.text("SOL FRANCE", 20, 18);
+
     pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text('Attendance Report', 20, 30);
-    
+    pdf.setFont("helvetica", "normal");
+    pdf.text("Attendance Report", 20, 30);
+
     // Report Title
     pdf.setFontSize(16);
     pdf.setTextColor(0, 0, 0);
-    pdf.setFont('helvetica', 'bold');
+    pdf.setFont("helvetica", "bold");
     pdf.text(`Attendance Report - ${sectionName}`, 20, 55);
-    
+
     let yPos = 70;
-    
+
     // Date & Department Section
     pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'bold');
+    pdf.setFont("helvetica", "bold");
     pdf.setTextColor(1, 2, 54);
-    pdf.text('Date & Department', 20, yPos);
+    pdf.text("Date & Department", 20, yPos);
     yPos += 8;
-    
+
     // Draw table
     pdf.setDrawColor(200, 200, 200);
     pdf.setLineWidth(0.5);
-    
+
     // Table header
     pdf.setFillColor(240, 240, 240);
-    pdf.rect(20, yPos, 80, 8, 'FD');
-    pdf.rect(100, yPos, 90, 8, 'FD');
-    
+    pdf.rect(20, yPos, 80, 8, "FD");
+    pdf.rect(100, yPos, 90, 8, "FD");
+
     pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
+    pdf.setFont("helvetica", "bold");
     pdf.setTextColor(0, 0, 0);
-    pdf.text('Field', 25, yPos + 6);
-    pdf.text('Value', 105, yPos + 6);
+    pdf.text("Field", 25, yPos + 6);
+    pdf.text("Value", 105, yPos + 6);
     yPos += 8;
-    
+
     // Date row
-    pdf.setFont('helvetica', 'normal');
-    pdf.rect(20, yPos, 80, 8, 'D');
-    pdf.rect(100, yPos, 90, 8, 'D');
-    pdf.text('Date of Report', 25, yPos + 6);
+    pdf.setFont("helvetica", "normal");
+    pdf.rect(20, yPos, 80, 8, "D");
+    pdf.rect(100, yPos, 90, 8, "D");
+    pdf.text("Date of Report", 25, yPos + 6);
     pdf.text(date, 105, yPos + 6);
     yPos += 8;
-    
+
     // Department row
-    pdf.rect(20, yPos, 80, 8, 'D');
-    pdf.rect(100, yPos, 90, 8, 'D');
-    pdf.text('Department', 25, yPos + 6);
+    pdf.rect(20, yPos, 80, 8, "D");
+    pdf.rect(100, yPos, 90, 8, "D");
+    pdf.text("Department", 25, yPos + 6);
     pdf.text(sectionName, 105, yPos + 6);
     yPos += 15;
-    
+
     // Attendance Details based on section
-    if (attendanceSection === 'basement') {
+    if (attendanceSection === "basement") {
       // Roller Attendance
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Roller Attendance', 20, yPos);
+      pdf.text("Roller Attendance", 20, yPos);
       yPos += 8;
-      
+
       drawTable(pdf, yPos, [
-        ['Total Rollers', (attendanceData?.basementRollers || 0).toString() + ' Staff'],
-        ['Roller Present', (attendanceData?.basementRollersPresent || 0).toString() + ' Staff'],
-        ['Roller Absent', (attendanceData?.basementRollersAbsent || 0).toString() + ' Staff']
+        [
+          "Total Rollers",
+          (attendanceData?.basementRollers || 0).toString() + " Staff",
+        ],
+        [
+          "Roller Present",
+          (attendanceData?.basementRollersPresent || 0).toString() + " Staff",
+        ],
+        [
+          "Roller Absent",
+          (attendanceData?.basementRollersAbsent || 0).toString() + " Staff",
+        ],
       ]);
       yPos += 40; // Increased spacing to prevent overlap
-      
+
       // Gummer Attendance
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Gummer Attendance', 20, yPos);
+      pdf.text("Gummer Attendance", 20, yPos);
       yPos += 8;
-      
+
       drawTable(pdf, yPos, [
-        ['Gummer Total', (attendanceData?.basementfilterTotal || 0).toString() + ' Staff'],
-        ['Gummer Present', (attendanceData?.basementfilterPresent || 0).toString() + ' Staff'],
-        ['Gummer Absent', (attendanceData?.basementfilterAbsent || 0).toString() + ' Staff']
+        [
+          "Gummer Total",
+          (attendanceData?.basementfilterTotal || 0).toString() + " Staff",
+        ],
+        [
+          "Gummer Present",
+          (attendanceData?.basementfilterPresent || 0).toString() + " Staff",
+        ],
+        [
+          "Gummer Absent",
+          (attendanceData?.basementfilterAbsent || 0).toString() + " Staff",
+        ],
       ]);
       yPos += 40; // Increased spacing to prevent overlap
-      
+
       // Supervisor Attendance
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Supervisor Attendance', 20, yPos);
+      pdf.text("Supervisor Attendance", 20, yPos);
       yPos += 8;
-      
+
       drawTable(pdf, yPos, [
-        ['Supervisor Present', (attendanceData?.basementSupervisorPresent || 0).toString() + ' Staff'],
-        ['Supervisor Absent', (attendanceData?.basementSupervisorAbsent || 0).toString() + ' Staff']
+        [
+          "Supervisor Present",
+          (attendanceData?.basementSupervisorPresent || 0).toString() +
+            " Staff",
+        ],
+        [
+          "Supervisor Absent",
+          (attendanceData?.basementSupervisorAbsent || 0).toString() + " Staff",
+        ],
       ]);
-      
-    } else if (attendanceSection === 'firstFloor') {
+    } else if (attendanceSection === "firstFloor") {
       // Roller Attendance
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Roller Attendance', 20, yPos);
+      pdf.text("Roller Attendance", 20, yPos);
       yPos += 8;
-      
+
       drawTable(pdf, yPos, [
-        ['Total Rollers', (attendanceData?.firstFloorRollers || 0).toString() + ' Staff'],
-        ['Roller Present', (attendanceData?.firstFloorRollersPresent || 0).toString() + ' Staff'],
-        ['Roller Absent', (attendanceData?.firstFloorRollersAbsent || 0).toString() + ' Staff']
+        [
+          "Total Rollers",
+          (attendanceData?.firstFloorRollers || 0).toString() + " Staff",
+        ],
+        [
+          "Roller Present",
+          (attendanceData?.firstFloorRollersPresent || 0).toString() + " Staff",
+        ],
+        [
+          "Roller Absent",
+          (attendanceData?.firstFloorRollersAbsent || 0).toString() + " Staff",
+        ],
       ]);
       yPos += 40; // Increased spacing to prevent overlap
-      
+
       // Gummer Attendance
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Gummer Attendance', 20, yPos);
+      pdf.text("Gummer Attendance", 20, yPos);
       yPos += 8;
-      
+
       drawTable(pdf, yPos, [
-        ['Gummer Total', (attendanceData?.firstFloorfilterTotal || 0).toString() + ' Staff'],
-        ['Gummer Present', (attendanceData?.firstFloorfilterPresent || 0).toString() + ' Staff'],
-        ['Gummer Absent', (attendanceData?.firstFloorfilterAbsent || 0).toString() + ' Staff']
+        [
+          "Gummer Total",
+          (attendanceData?.firstFloorfilterTotal || 0).toString() + " Staff",
+        ],
+        [
+          "Gummer Present",
+          (attendanceData?.firstFloorfilterPresent || 0).toString() + " Staff",
+        ],
+        [
+          "Gummer Absent",
+          (attendanceData?.firstFloorfilterAbsent || 0).toString() + " Staff",
+        ],
       ]);
       yPos += 40; // Increased spacing to prevent overlap
-      
+
       // Supervisor Attendance
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Supervisor Attendance', 20, yPos);
+      pdf.text("Supervisor Attendance", 20, yPos);
       yPos += 8;
-      
+
       drawTable(pdf, yPos, [
-        ['Supervisor Present', (attendanceData?.firstFloorSupervisorPresent || 0).toString() + ' Staff'],
-        ['Supervisor Absent', (attendanceData?.firstFloorSupervisorAbsent || 0).toString() + ' Staff']
+        [
+          "Supervisor Present",
+          (attendanceData?.firstFloorSupervisorPresent || 0).toString() +
+            " Staff",
+        ],
+        [
+          "Supervisor Absent",
+          (attendanceData?.firstFloorSupervisorAbsent || 0).toString() +
+            " Staff",
+        ],
       ]);
-      
-    } else if (attendanceSection === 'quality') {
+    } else if (attendanceSection === "quality") {
       // Checker Attendance
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Checker Attendance', 20, yPos);
+      pdf.text("Checker Attendance", 20, yPos);
       yPos += 8;
-      
+
       drawTable(pdf, yPos, [
-        ['Total Checkers', (attendanceData?.qualityTotal || 0).toString() + ' Staff'],
-        ['Total Present', (attendanceData?.qualityPresent || 0).toString() + ' Staff'],
-        ['Total Absent', (attendanceData?.qualityAbsent || 0).toString() + ' Staff']
+        [
+          "Total Checkers",
+          (attendanceData?.qualityTotal || 0).toString() + " Staff",
+        ],
+        [
+          "Total Present",
+          (attendanceData?.qualityPresent || 0).toString() + " Staff",
+        ],
+        [
+          "Total Absent",
+          (attendanceData?.qualityAbsent || 0).toString() + " Staff",
+        ],
       ]);
-      
-    } else if (attendanceSection === 'packaging') {
+    } else if (attendanceSection === "packaging") {
       // Manpower Attendance
-      pdf.setFont('helvetica', 'bold');
+      pdf.setFont("helvetica", "bold");
       pdf.setTextColor(1, 2, 54);
-      pdf.text('Manpower Attendance', 20, yPos);
+      pdf.text("Manpower Attendance", 20, yPos);
       yPos += 8;
-      
+
       drawTable(pdf, yPos, [
-        ['Total Manpower', (attendanceData?.packingTotal || 0).toString() + ' Staff'],
-        ['Total Present', (attendanceData?.packingPresent || 0).toString() + ' Staff'],
-        ['Total Absent', (attendanceData?.packingAbsent || 0).toString() + ' Staff']
+        [
+          "Total Manpower",
+          (attendanceData?.packingTotal || 0).toString() + " Staff",
+        ],
+        [
+          "Total Present",
+          (attendanceData?.packingPresent || 0).toString() + " Staff",
+        ],
+        [
+          "Total Absent",
+          (attendanceData?.packingAbsent || 0).toString() + " Staff",
+        ],
       ]);
     }
-    
+
     // Footer
     pdf.setFontSize(8);
     pdf.setTextColor(128, 128, 128);
-    pdf.setFont('helvetica', 'italic');
+    pdf.setFont("helvetica", "italic");
     pdf.text(
-    `Generated on ${new Date().toLocaleString('en-IN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    })}`,
-    20,
-    280
+      `Generated on ${new Date().toLocaleString("en-IN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })}`,
+      20,
+      280,
     );
-    pdf.text(`© ${new Date().getFullYear()} Sol France. All rights reserved.`, 20, 285);
+    pdf.text(
+      `© ${new Date().getFullYear()} Sol France. All rights reserved.`,
+      20,
+      285,
+    );
   };
-  
+
   // Helper to draw tables
   const drawTable = (pdf: any, startY: number, rows: string[][]) => {
     let yPos = startY;
-    
+
     // Header
     pdf.setFillColor(240, 240, 240);
-    pdf.rect(20, yPos, 80, 8, 'FD');
-    pdf.rect(100, yPos, 90, 8, 'FD');
-    
+    pdf.rect(20, yPos, 80, 8, "FD");
+    pdf.rect(100, yPos, 90, 8, "FD");
+
     pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
+    pdf.setFont("helvetica", "bold");
     pdf.setTextColor(0, 0, 0);
-    pdf.text('Label', 25, yPos + 6);
-    pdf.text('Value', 105, yPos + 6);
+    pdf.text("Label", 25, yPos + 6);
+    pdf.text("Value", 105, yPos + 6);
     yPos += 8;
-    
+
     // Data rows
-    pdf.setFont('helvetica', 'normal');
+    pdf.setFont("helvetica", "normal");
     rows.forEach(([label, value]) => {
-      pdf.rect(20, yPos, 80, 8, 'D');
-      pdf.rect(100, yPos, 90, 8, 'D');
+      pdf.rect(20, yPos, 80, 8, "D");
+      pdf.rect(100, yPos, 90, 8, "D");
       pdf.text(label, 25, yPos + 6);
       pdf.text(value, 105, yPos + 6);
       yPos += 8;
@@ -696,14 +911,23 @@ export default function Dashboard() {
                 }`}
             >
                 <UserCheck size={16}/> 
-                {activeTab === 'attendance' && attendanceSection ? (
-                    attendanceSection === 'basement' ? 'Basement' :
-                    attendanceSection === 'firstFloor' ? 'First Floor' :
-                    attendanceSection === 'quality' ? 'Quality' :
-                    attendanceSection === 'packaging' ? 'Packaging' :
-                    attendanceSection === 'filter' ? 'Filter' : 'Attendance'
-                ) : 'Attendance'}
-                <ChevronDown size={16} className={`transition-transform duration-200 ${showAttendanceDropdown ? 'rotate-180' : ''}`} />
+                {activeTab === "attendance" && attendanceSection
+              ? attendanceSection === "basement"
+                ? "Basement"
+                : attendanceSection === "firstFloor"
+                  ? "First Floor"
+                  : attendanceSection === "quality"
+                    ? "Quality"
+                    : attendanceSection === "packaging"
+                      ? "Packaging"
+                      : attendanceSection === "filter"
+                        ? "Filter"
+                        : "Attendance"
+              : "Attendance"}
+                <ChevronDown
+                  size={16}
+                  className={`transition-transform duration-200 ${showAttendanceDropdown ? "rotate-180" : ""}`}
+                />
             </button>
             <TabButton 
                 label="Cone Production" 
@@ -723,14 +947,22 @@ export default function Dashboard() {
                 active={activeTab === 'equal'} 
                 onClick={() => setActiveTab('equal')} 
             />
-            <div className="email-button-container">
+            <div className="email-button-container flex items-center gap-2">
                 <div 
                     ref={emailButtonRef}
                     onClick={openEmailDialog} 
                     className='py-2 px-2 flex items-center cursor-pointer bg-[#263247e0] rounded-xl hover:bg-[#263247] transition-colors'
+                    title="Send Email"
                 >
                     <MailCheck size={32} />
                 </div>
+                {/* <button
+                    onClick={testScheduledEmail}
+                    className='py-2 px-3 flex items-center cursor-pointer bg-green-600/20 hover:bg-green-600/30 rounded-xl border border-green-600/30 transition-colors text-green-400 hover:text-green-300 text-xs font-bold whitespace-nowrap'
+                    title="Test Scheduled Email (Force Send)"
+                >
+                    Test Auto Email
+                </button> */}
             </div>
         </div>
 
@@ -830,124 +1062,146 @@ export default function Dashboard() {
 
                     {/* Menu Items */}
                     <div className="py-2">
-                        <button 
-                            onClick={() => {
-                                setActiveTab('attendance');
-                                setAttendanceSection('basement');
-                                setShowAttendanceDropdown(false);
-                            }}
-                            className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
-                                activeTab === 'attendance' && attendanceSection === 'basement'
-                                    ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                            }`}
-                        >
-                            <div className={`w-2 h-2 rounded-full transition-all ${
-                                activeTab === 'attendance' && attendanceSection === 'basement'
-                                    ? 'bg-blue-400 shadow-lg shadow-blue-400/50'
-                                    : 'bg-slate-600 group-hover:bg-slate-500'
-                            }`} />
-                            <span>Basement</span>
-                        </button>
-                        
-                        <button 
-                            onClick={() => {
-                                setActiveTab('attendance');
-                                setAttendanceSection('firstFloor');
-                                setShowAttendanceDropdown(false);
-                            }}
-                            className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
-                                activeTab === 'attendance' && attendanceSection === 'firstFloor'
-                                    ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                            }`}
-                        >
-                            <div className={`w-2 h-2 rounded-full transition-all ${
-                                activeTab === 'attendance' && attendanceSection === 'firstFloor'
-                                    ? 'bg-blue-400 shadow-lg shadow-blue-400/50'
-                                    : 'bg-slate-600 group-hover:bg-slate-500'
-                            }`} />
-                            <span>First Floor</span>
-                        </button>
-                        
                         <button
-                            onClick={() => {
-                                setActiveTab('attendance');
-                                setAttendanceSection('quality');
-                                setShowAttendanceDropdown(false);
-                            }}
-                            className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
-                                activeTab === 'attendance' && attendanceSection === 'quality'
-                                    ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                            }`}
+                          onClick={() => {
+                            setActiveTab("attendance");
+                            setAttendanceSection("basement");
+                            setShowAttendanceDropdown(false);
+                          }}
+                          className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
+                            activeTab === "attendance" &&
+                            attendanceSection === "basement"
+                              ? "bg-blue-600/20 text-blue-300 border-l-2 border-blue-500"
+                              : "text-slate-300 hover:bg-white/5 hover:text-white"
+                          }`}
                         >
-                            <div className={`w-2 h-2 rounded-full transition-all ${
-                                activeTab === 'attendance' && attendanceSection === 'quality'
-                                    ? 'bg-blue-400 shadow-lg shadow-blue-400/50'
-                                    : 'bg-slate-600 group-hover:bg-slate-500'
-                            }`} />
-                            <span>Quality</span>
-                        </button>
-                        
-                        <button
-                            onClick={() => {
-                                setActiveTab('attendance');
-                                setAttendanceSection('packaging');
-                                setShowAttendanceDropdown(false);
-                            }}
-                            className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
-                                activeTab === 'attendance' && attendanceSection === 'packaging'
-                                    ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                          <div
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              activeTab === "attendance" &&
+                              attendanceSection === "basement"
+                                ? "bg-blue-400 shadow-lg shadow-blue-400/50"
+                                : "bg-slate-600 group-hover:bg-slate-500"
                             }`}
-                        >
-                            <div className={`w-2 h-2 rounded-full transition-all ${
-                                activeTab === 'attendance' && attendanceSection === 'packaging'
-                                    ? 'bg-blue-400 shadow-lg shadow-blue-400/50'
-                                    : 'bg-slate-600 group-hover:bg-slate-500'
-                            }`} />
-                            <span>Packaging</span>
-                        </button>
-                        
-                        <button
-                            onClick={() => {
-                                setActiveTab('attendance');
-                                setAttendanceSection('filter');
-                                setShowAttendanceDropdown(false);
-                            }}
-                            className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
-                                activeTab === 'attendance' && attendanceSection === 'filter'
-                                    ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                            }`}
-                        >
-                            <div className={`w-2 h-2 rounded-full transition-all ${
-                                activeTab === 'attendance' && attendanceSection === 'filter'
-                                    ? 'bg-blue-400 shadow-lg shadow-blue-400/50'
-                                    : 'bg-slate-600 group-hover:bg-slate-500'
-                            }`} />
-                            <span>Filter</span>
+                          />
+                          <span>Basement</span>
                         </button>
 
                         <button
-                            onClick={() => {
-                                setActiveTab('attendance');
-                                setAttendanceSection('graphs');
-                                setShowAttendanceDropdown(false);
-                            }}
-                            className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
-                                activeTab === 'attendance' && attendanceSection === 'graphs'
-                                    ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-500'
-                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                            }`}
+                          onClick={() => {
+                            setActiveTab("attendance");
+                            setAttendanceSection("firstFloor");
+                            setShowAttendanceDropdown(false);
+                          }}
+                          className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
+                            activeTab === "attendance" &&
+                            attendanceSection === "firstFloor"
+                              ? "bg-blue-600/20 text-blue-300 border-l-2 border-blue-500"
+                              : "text-slate-300 hover:bg-white/5 hover:text-white"
+                          }`}
                         >
-                            <div className={`w-2 h-2 rounded-full transition-all ${
-                                activeTab === 'attendance' && attendanceSection === 'graphs'
-                                    ? 'bg-blue-400 shadow-lg shadow-blue-400/50'
-                                    : 'bg-slate-600 group-hover:bg-slate-500'
-                            }`} />
-                            <span>Visual Graphs</span>
+                          <div
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              activeTab === "attendance" &&
+                              attendanceSection === "firstFloor"
+                                ? "bg-blue-400 shadow-lg shadow-blue-400/50"
+                                : "bg-slate-600 group-hover:bg-slate-500"
+                            }`}
+                          />
+                          <span>First Floor</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setActiveTab("attendance");
+                            setAttendanceSection("quality");
+                            setShowAttendanceDropdown(false);
+                          }}
+                          className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
+                            activeTab === "attendance" &&
+                            attendanceSection === "quality"
+                              ? "bg-blue-600/20 text-blue-300 border-l-2 border-blue-500"
+                              : "text-slate-300 hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              activeTab === "attendance" &&
+                              attendanceSection === "quality"
+                                ? "bg-blue-400 shadow-lg shadow-blue-400/50"
+                                : "bg-slate-600 group-hover:bg-slate-500"
+                            }`}
+                          />
+                          <span>Quality</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setActiveTab("attendance");
+                            setAttendanceSection("packaging");
+                            setShowAttendanceDropdown(false);
+                          }}
+                          className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
+                            activeTab === "attendance" &&
+                            attendanceSection === "packaging"
+                              ? "bg-blue-600/20 text-blue-300 border-l-2 border-blue-500"
+                              : "text-slate-300 hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              activeTab === "attendance" &&
+                              attendanceSection === "packaging"
+                                ? "bg-blue-400 shadow-lg shadow-blue-400/50"
+                                : "bg-slate-600 group-hover:bg-slate-500"
+                            }`}
+                          />
+                          <span>Packaging</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setActiveTab("attendance");
+                            setAttendanceSection("filter");
+                            setShowAttendanceDropdown(false);
+                          }}
+                          className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
+                            activeTab === "attendance" && attendanceSection === "filter"
+                              ? "bg-blue-600/20 text-blue-300 border-l-2 border-blue-500"
+                              : "text-slate-300 hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              activeTab === "attendance" &&
+                              attendanceSection === "filter"
+                                ? "bg-blue-400 shadow-lg shadow-blue-400/50"
+                                : "bg-slate-600 group-hover:bg-slate-500"
+                            }`}
+                          />
+                          <span>Filter</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setActiveTab("attendance");
+                            setAttendanceSection("graphs");
+                            setShowAttendanceDropdown(false);
+                          }}
+                          className={`w-full text-left px-5 py-3.5 text-sm font-medium transition-all flex items-center gap-3 group ${
+                            activeTab === "attendance" && attendanceSection === "graphs"
+                              ? "bg-blue-600/20 text-blue-300 border-l-2 border-blue-500"
+                              : "text-slate-300 hover:bg-white/5 hover:text-white"
+                          }`}
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              activeTab === "attendance" &&
+                              attendanceSection === "graphs"
+                                ? "bg-blue-400 shadow-lg shadow-blue-400/50"
+                                : "bg-slate-600 group-hover:bg-slate-500"
+                            }`}
+                          />
+                          <span>Visual Graphs</span>
                         </button>
                     </div>
 
@@ -963,7 +1217,7 @@ export default function Dashboard() {
                             className="w-full px-5 py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-3 bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 text-green-400 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg border border-green-600/30 hover:border-green-500/50 shadow-lg shadow-green-900/20"
                         >
                             <Download size={16} />
-                            {generatingTotalPDF ? 'Generating...' : 'Download Excel File'}
+                            {generatingTotalPDF ? "Generating..." : "Download Excel File"}
                         </button>
                     </div>
 
@@ -978,7 +1232,7 @@ export default function Dashboard() {
                             className="w-full px-5 py-3.5 text-sm font-bold transition-all flex items-center justify-center gap-2 bg-gradient-to-r from-green-600/20 to-emerald-600/20 hover:from-green-600/30 hover:to-emerald-600/30 text-green-400 hover:text-green-300 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg border border-green-600/30 hover:border-green-500/50 shadow-lg shadow-green-900/20"
                         >
                             <Download size={16} />
-                            {generatingTotalPDF ? 'Generating...' : 'Download Attendance'}
+                            {generatingTotalPDF ? "Generating..." : "Download Attendance"}
                         </button>
                     </div>
                 </div>
@@ -989,25 +1243,30 @@ export default function Dashboard() {
         <div className="bg-[#1e293b]/50 border border-slate-700 rounded-3xl backdrop-blur-xl shadow-2xl p-6 min-h-[500px]">
             
             {/* 1. ATTENDANCE TAB */}
-            {activeTab === 'attendance' && !attendanceSection && (
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex items-center justify-center min-h-[500px]">
-                    <div className="text-center space-y-4">
-                        <div className="bg-purple-500/10 p-6 rounded-full w-24 h-24 mx-auto flex items-center justify-center">
-                            <UserCheck size={48} className="text-purple-400" />
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-300">Select Attendance Department</h3>
-                        <p className="text-slate-500 text-sm max-w-md">Please select a department from the dropdown menu to view attendance details.</p>
-                    </div>
+            {activeTab === "attendance" && !attendanceSection && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 flex items-center justify-center min-h-[500px]">
+                <div className="text-center space-y-4">
+                  <div className="bg-purple-500/10 p-6 rounded-full w-24 h-24 mx-auto flex items-center justify-center">
+                    <UserCheck size={48} className="text-purple-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-300">
+                    Select Attendance Department
+                  </h3>
+                  <p className="text-slate-500 text-sm max-w-md">
+                    Please select a department from the dropdown menu to view
+                    attendance details.
+                  </p>
                 </div>
+              </div>
             )}
 
-            {activeTab === 'attendance' && attendanceSection && (
+            {activeTab === "attendance" && attendanceSection && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                     
                     {/* Content Wrapper for PDF */}
                     <div ref={contentRef}>
                         {/* Basements Section */}
-                    {attendanceSection === 'basement' && (
+                    {attendanceSection === "basement" && (
                             <>
                                 {/* Header with Download Button */}
                                 <div className="flex items-center justify-between border-b border-slate-700 pb-4 mb-8">
@@ -1049,7 +1308,7 @@ export default function Dashboard() {
                     )}
 
                     {/* First Floor Section */}
-                    {attendanceSection === 'firstFloor' && (
+                    {attendanceSection === "firstFloor" && (
                         <>
                             {/* Header with Download Button */}
                             <div className="flex items-center justify-between border-b border-slate-700 pb-4 mb-8">
@@ -1091,7 +1350,7 @@ export default function Dashboard() {
                     )}
 
                     {/* Quality Department Section */}
-                    {attendanceSection === 'quality' && (
+                    {attendanceSection === "quality" && (
                         <>
                             {/* Header with Download Button */}
                             <div className="flex items-center justify-between border-b border-slate-700 pb-4 mb-8">
@@ -1124,7 +1383,7 @@ export default function Dashboard() {
                     )}
 
                     {/* Packaging Department Section */}
-                    {attendanceSection === 'packaging' && (
+                    {attendanceSection === "packaging" && (
                         <>
                             {/* Header with Download Button */}
                             <div className="flex items-center justify-between border-b border-slate-700 pb-4 mb-8">
@@ -1157,7 +1416,7 @@ export default function Dashboard() {
                     )}
 
                     {/* Filter Department Section */}
-                    {attendanceSection === 'filter' && (
+                    {attendanceSection === "filter" && (
                         <>
                             {/* Header with Download Button */}
                             <div className="flex items-center justify-between border-b border-slate-700 pb-4 mb-8">
@@ -1195,15 +1454,13 @@ export default function Dashboard() {
                     )}
 
                     {/* Visual Graphs */}
-                    {attendanceSection === 'graphs' && (
-                        <AttendanceLineGraph />
-                    )}
+                    {attendanceSection === "graphs" && <VisualData />}
                     </div>
                 </div>
             )}
 
             {/* 2. PRODUCTION TAB */}
-            {activeTab === 'production' && (
+            {activeTab === "production" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                     
                     {/* Header */}
@@ -1239,7 +1496,7 @@ export default function Dashboard() {
             )}
 
             {/* 3. QUALITY CHECK TAB */}
-            {activeTab === 'quality' && (
+            {activeTab === "quality" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                     
                     <div className="flex items-center gap-3 border-b border-slate-700 pb-4">
@@ -1257,8 +1514,14 @@ export default function Dashboard() {
                         </div>
                         {/* Visual Bar Graph */}
                         <div className="h-6 bg-slate-800 rounded-full overflow-hidden flex w-full">
-                            <div className="h-full bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]" style={{ width: `${(0 / (1)) * 100}%` }}></div>
-                            <div className="h-full bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]" style={{ width: `${(0 / (1)) * 100}%` }}></div>
+                          <div
+                            className="h-full bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]"
+                            style={{ width: `${(0 / 1) * 100}%` }}
+                          ></div>
+                          <div
+                            className="h-full bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+                            style={{ width: `${(0 / 1) * 100}%` }}
+                          ></div>
                         </div>
                         <div className="flex justify-between mt-2 text-xs text-slate-500">
                             <span>Success Rate</span>
@@ -1284,7 +1547,7 @@ export default function Dashboard() {
             )}
 
             {/* 4. EQUAL TEAM TAB */}
-            {activeTab === 'equal' && (
+            {activeTab === "equal" && (
                 <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                     
                     <div className="flex items-center gap-3 border-b border-slate-700 pb-4">
@@ -1334,48 +1597,53 @@ export default function Dashboard() {
       {/* --- EMAIL NOTIFICATION CARD --- */}
       {emailNotification && (
         <div className="fixed bottom-6 left-6 z-[10000] animate-in fade-in slide-in-from-left-4 duration-300">
-          <div className={`min-w-[320px] max-w-md rounded-2xl border backdrop-blur-xl shadow-2xl overflow-hidden ${
-            emailNotification.type === 'loading'
-              ? 'bg-blue-900/30 border-blue-500/50 shadow-blue-900/30'
-              : emailNotification.type === 'success' 
-              ? 'bg-green-900/30 border-green-500/50 shadow-green-900/30' 
-              : 'bg-red-900/30 border-red-500/50 shadow-red-900/30'
-          }`}>
+          <div           className={`min-w-[320px] max-w-md rounded-2xl border backdrop-blur-xl shadow-2xl overflow-hidden ${
+            emailNotification.type === "loading"
+              ? "bg-blue-900/30 border-blue-500/50 shadow-blue-900/30"
+              : emailNotification.type === "success"
+                ? "bg-green-900/30 border-green-500/50 shadow-green-900/30"
+                : "bg-red-900/30 border-red-500/50 shadow-red-900/30"
+          }`}
+        >
             <div className="p-4 flex items-start gap-3">
-              <div className={`flex-shrink-0 p-2 rounded-lg ${
-                emailNotification.type === 'loading'
-                  ? 'bg-blue-500/20 text-blue-400'
-                  : emailNotification.type === 'success' 
-                  ? 'bg-green-500/20 text-green-400' 
-                  : 'bg-red-500/20 text-red-400'
-              }`}>
-                {emailNotification.type === 'loading' ? (
+              <div
+                className={`flex-shrink-0 p-2 rounded-lg ${
+                  emailNotification.type === "loading"
+                    ? "bg-blue-500/20 text-blue-400"
+                    : emailNotification.type === "success"
+                      ? "bg-green-500/20 text-green-400"
+                      : "bg-red-500/20 text-red-400"
+                }`}
+              >
+                {emailNotification.type === "loading" ? (
                   <Loader2 size={20} className="animate-spin" />
-                ) : emailNotification.type === 'success' ? (
+                ) : emailNotification.type === "success" ? (
                   <CheckCircle size={20} />
                 ) : (
                   <XCircle size={20} />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className={`text-sm font-bold ${
-                  emailNotification.type === 'loading'
-                    ? 'text-blue-300'
-                    : emailNotification.type === 'success' 
-                    ? 'text-green-300' 
-                    : 'text-red-300'
-                }`}>
-                  {emailNotification.type === 'loading'
-                    ? 'Sending Email'
-                    : emailNotification.type === 'success' 
-                    ? 'Success' 
-                    : 'Error'}
+                <p
+                  className={`text-sm font-bold ${
+                    emailNotification.type === "loading"
+                      ? "text-blue-300"
+                      : emailNotification.type === "success"
+                        ? "text-green-300"
+                        : "text-red-300"
+                  }`}
+                >
+                  {emailNotification.type === "loading"
+                    ? "Sending Email"
+                    : emailNotification.type === "success"
+                      ? "Success"
+                      : "Error"}
                 </p>
                 <p className="text-xs text-slate-300 mt-1">
                   {emailNotification.message}
                 </p>
               </div>
-              {emailNotification.type !== 'loading' && (
+              {emailNotification.type !== "loading" && (
                 <button
                   onClick={() => setEmailNotification(null)}
                   className="flex-shrink-0 p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
@@ -1394,86 +1662,114 @@ export default function Dashboard() {
 // --- SUB-COMPONENTS ---
 
 function TabButton({ label, icon, active, onClick }: any) {
-    return (
-        <button 
-            onClick={onClick}
-            className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
-                active 
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50 scale-[1.02]' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-        >
-            {icon} {label}
-        </button>
-    );
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all whitespace-nowrap ${
+        active
+          ? "bg-blue-600 text-white shadow-lg shadow-blue-900/50 scale-[1.02]"
+          : "text-slate-400 hover:text-white hover:bg-slate-800"
+      }`}
+    >
+      {icon} {label}
+    </button>
+  );
 }
 
 function TableCard({ title, children }: any) {
-    return (
-        <div className="bg-slate-900/30 rounded-2xl border border-slate-700/50 overflow-hidden">
-            <div className="p-4 border-b border-slate-700/50 font-bold text-white text-sm bg-white/5 uppercase tracking-wider">{title}</div>
-            <div className="p-2">
-                <table className="w-full text-sm"><tbody>{children}</tbody></table>
-            </div>
-        </div>
-    );
+  return (
+    <div className="bg-slate-900/30 rounded-2xl border border-slate-700/50 overflow-hidden">
+      <div className="p-4 border-b border-slate-700/50 font-bold text-white text-sm bg-white/5 uppercase tracking-wider">
+        {title}
+      </div>
+      <div className="p-2">
+        <table className="w-full text-sm">
+          <tbody>{children}</tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
-function MetricRow({ label, value, unit, highlight = false, isBad = false }: any) {
-    const isLongText = typeof value === 'string' && value.length > 20;
-    
-    return (
-      <tr className="border-b border-slate-700/30 last:border-0 hover:bg-white/5 transition-colors group">
-        <td className="p-4 text-slate-400 font-medium group-hover:text-slate-200 transition-colors">{label}</td>
-        <td className={`p-4 text-right font-bold 
-            ${highlight ? 'text-xl text-green-400' : isBad ? 'text-red-400' : 'text-white'}
-            ${isLongText ? 'text-xs leading-tight max-w-[150px]' : ''}
-        `}>
-          {value || 0} <span className="text-[10px] text-slate-500 font-normal ml-1">{unit}</span>
-        </td>
-      </tr>
-    );
+function MetricRow({
+  label,
+  value,
+  unit,
+  highlight = false,
+  isBad = false,
+}: any) {
+  const isLongText = typeof value === "string" && value.length > 20;
+
+  return (
+    <tr className="border-b border-slate-700/30 last:border-0 hover:bg-white/5 transition-colors group">
+      <td className="p-4 text-slate-400 font-medium group-hover:text-slate-200 transition-colors">
+        {label}
+      </td>
+      <td
+        className={`p-4 text-right font-bold 
+            ${highlight ? "text-xl text-green-400" : isBad ? "text-red-400" : "text-white"}
+            ${isLongText ? "text-xs leading-tight max-w-[150px]" : ""}
+        `}
+      >
+        {value || 0}{" "}
+        <span className="text-[10px] text-slate-500 font-normal ml-1">
+          {unit}
+        </span>
+      </td>
+    </tr>
+  );
 }
 
 function ProgressBar({ label, current, total, color }: any) {
-    const safeCurrent = Number(current) || 0;
-    const safeTotal = Number(total) || 1; 
-    const percent = Math.min((safeCurrent / safeTotal) * 100, 100);
-    
-    return (
-        <div className="bg-slate-900/40 p-6 rounded-2xl border border-slate-700 shadow-inner">
-            <div className="flex justify-between mb-3 items-end">
-                <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">{label}</span>
-                <div className="text-right">
-                    <span className="text-2xl font-black text-white">{safeCurrent}</span>
-                    <span className="text-sm text-slate-500 mx-1">/</span>
-                    <span className="text-sm font-bold text-slate-400">{safeTotal}</span>
-                </div>
-            </div>
-            <div className="h-4 bg-slate-800 rounded-full overflow-hidden">
-                <div 
-                    className={`h-full bg-blue-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(59,130,246,0.6)]`} 
-                    style={{ width: `${percent}%` }}
-                >
-                    <div className="w-full h-full bg-white/20 animate-pulse"></div>
-                </div>
-            </div>
-            <div className="text-right mt-2 text-xs font-bold text-blue-400">{Math.round(percent)}% Completed</div>
+  const safeCurrent = Number(current) || 0;
+  const safeTotal = Number(total) || 1;
+  const percent = Math.min((safeCurrent / safeTotal) * 100, 100);
+
+  return (
+    <div className="bg-slate-900/40 p-6 rounded-2xl border border-slate-700 shadow-inner">
+      <div className="flex justify-between mb-3 items-end">
+        <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">
+          {label}
+        </span>
+        <div className="text-right">
+          <span className="text-2xl font-black text-white">{safeCurrent}</span>
+          <span className="text-sm text-slate-500 mx-1">/</span>
+          <span className="text-sm font-bold text-slate-400">{safeTotal}</span>
         </div>
-    );
+      </div>
+      <div className="h-4 bg-slate-800 rounded-full overflow-hidden">
+        <div
+          className={`h-full bg-blue-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(59,130,246,0.6)]`}
+          style={{ width: `${percent}%` }}
+        >
+          <div className="w-full h-full bg-white/20 animate-pulse"></div>
+        </div>
+      </div>
+      <div className="text-right mt-2 text-xs font-bold text-blue-400">
+        {Math.round(percent)}% Completed
+      </div>
+    </div>
+  );
 }
 
 function BigCard({ label, value, icon, color }: any) {
-    const colors: any = {
-        blue: 'text-blue-400 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20',
-        green: 'text-green-400 bg-green-500/10 border-green-500/20 hover:bg-green-500/20',
-        red: 'text-red-400 bg-red-500/10 border-red-500/20 hover:bg-red-500/20',
-    };
-    return (
-        <div className={`p-6 rounded-3xl border flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.02] ${colors[color]}`}>
-            <div className="p-4 rounded-full bg-black/20">{icon}</div>
-            <span className="text-4xl font-black text-white tracking-tighter">{value || 0}</span>
-            <span className="text-xs font-bold uppercase opacity-80 tracking-widest">{label}</span>
-        </div>
-    );
+  const colors: any = {
+    blue: "text-blue-400 bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20",
+    green:
+      "text-green-400 bg-green-500/10 border-green-500/20 hover:bg-green-500/20",
+    red: "text-red-400 bg-red-500/10 border-red-500/20 hover:bg-red-500/20",
+  };
+  return (
+    <div
+      className={`p-6 rounded-3xl border flex flex-col items-center justify-center gap-3 transition-all hover:scale-[1.02] ${colors[color]}`}
+    >
+      <div className="p-4 rounded-full bg-black/20">{icon}</div>
+      <span className="text-4xl font-black text-white tracking-tighter">
+        {value || 0}
+      </span>
+      <span className="text-xs font-bold uppercase opacity-80 tracking-widest">
+        {label}
+      </span>
+    </div>
+  );
 }

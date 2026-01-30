@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 const INDEX_URL = "https://docs.google.com/spreadsheets/d/1nCeM9jtXEfm7fHsHnLVJugxmJU-TirWlAcDPFzEawkM/export?format=csv";
 
 // Path where we cache the latest downloaded attendance Excel file
-const LOCAL_EXCEL_PATH = path.join(process.cwd(), 'attendance-latest.xlsx');
+const LOCAL_EXCEL_PATH = path.join(process.cwd(), 'public', 'attendance-latest.xlsx');
 
 // https://docs.google.com/spreadsheets/d/1ec9iB8u1rLEZuL3G0nIT6mkUYWI1vSbER8GHIJEWTDU/edit?usp=sharing
 async function getLatestFileId() {
