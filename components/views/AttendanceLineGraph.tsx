@@ -10,7 +10,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import DonutGraph from "./visualData/DonutGraph";
+import DonutGraph from "../visualData/DonutGraph";
 import * as XLSX from "xlsx";
 import { useEffect } from "react";
 const data = [
