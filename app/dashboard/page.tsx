@@ -6,6 +6,7 @@ import { ArrowLeft, BarChart3, Database, CheckCircle2, MailCheck, Package, Users
 import Link from 'next/link';
 import TechLoader from '@/components/TechLoader'; // Import new loader
 import AttendanceLineGraph from "@/components/views/AttendanceLineGraph";
+import VisualData from '@/components/visualData/page';
 
 export default function Dashboard() {
 
@@ -1196,7 +1197,7 @@ export default function Dashboard() {
 
                     {/* Visual Graphs */}
                     {attendanceSection === 'graphs' && (
-                        <AttendanceLineGraph />
+                        <VisualData />
                     )}
                     </div>
                 </div>
